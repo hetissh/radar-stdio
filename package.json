@@ -1,0 +1,12 @@
+{
+  "name": "radar-stdio",
+  "private": true,
+  "description": "RADAR STUDIO storefront: static site in site/, build tools in tools/.",
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "3.6.2"
+  }
+}
