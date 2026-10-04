@@ -1,0 +1,10 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+
+# Local Claude Code settings (machine-specific)
+.claude/settings.local.json

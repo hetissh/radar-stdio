@@ -1,0 +1,206 @@
+[
+  {
+    "id": "01",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-371b964a-c7d4-4447-b669-15746b87df84.png",
+    "asset": "assets/reference-01.png",
+    "sha256": "beb922494154b4b5eb35ee965e4f4d3d3d23ad426fdd96a67b3974aa5c87de0f"
+  },
+  {
+    "id": "02",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-c62bde9d-b2e1-494d-9e87-43ca30c21ab3.png",
+    "asset": "assets/reference-02.png",
+    "sha256": "929fc1049bcbbda11bc36ab4a500f6633951c40975e4be7a3a89b9c854cf61c0"
+  },
+  {
+    "id": "03",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-89d13cf4-7d5d-4220-b5f5-bb497f2411de.png",
+    "asset": "assets/reference-03.png",
+    "sha256": "7b1eb3ecf970b42f1357a956b5a113ccf3b65272ace71fee1b0a86e57b34efcf"
+  },
+  {
+    "id": "04",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-5024b646-1b4f-4baa-bd48-d3ce3a6cf1b5.png",
+    "asset": "assets/reference-04.png",
+    "sha256": "9af94355fd6ab79b398b2c1a2cc877d3a22b3512b55bfa3ed303738907a641d7"
+  },
+  {
+    "id": "05",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-69291cb5-90ad-4e9f-8c80-9d15c377217d.png",
+    "asset": "assets/reference-05.png",
+    "sha256": "f636e780f3926d147a26007cb1a201488e9e497b9058cf30280da60674ae7632"
+  },
+  {
+    "id": "06",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-dd423892-8a99-4f68-b731-fe88e5b835f5.png",
+    "asset": "assets/reference-06.png",
+    "sha256": "a9127e1ac3db69f6039023ddf156b2b13dfdeb9450fd7983895a3978caaae646"
+  },
+  {
+    "id": "07",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-c280b76c-030b-497f-859d-6f4e51a03885.png",
+    "asset": "assets/reference-07.png",
+    "sha256": "4a5b1cd6146e87a34d5913106c8da938b073c1789808d05b9e6e11adb39d0794"
+  },
+  {
+    "id": "08",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-a606b1b1-361a-4fa3-aa24-d5e88182a8d6.png",
+    "asset": "assets/reference-08.png",
+    "sha256": "cafa619db33d9522dfd237060e439aad8f3115e2ef3a1b03a49ae0599b4c57e4"
+  },
+  {
+    "id": "09",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-4a774fa1-4590-4ec9-a620-95a96316d4c2.png",
+    "asset": "assets/reference-09.png",
+    "sha256": "dd039ac086ce67275a449cc28df0edd7432cd532d4b1a6d0e7ab42d6d7089370"
+  },
+  {
+    "id": "10",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-99fd279b-8602-437e-94ab-a40b37e9356a.png",
+    "asset": "assets/reference-10.png",
+    "sha256": "d71647bf9be7805b5c23b9fe0ff17ea177e8f655d75a115dc05a28659c95fd24"
+  },
+  {
+    "id": "11",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-9deda267-62fc-4915-b611-2ae2fca95b8d.png",
+    "asset": "assets/reference-11.png",
+    "sha256": "0d88409c9c7c842150dcb6ce6cd360e5bf45fffeddd463df5e0d99295aa737e1"
+  },
+  {
+    "id": "12",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-0c975930-cc85-4164-a83d-6d1c3355f6e9.png",
+    "asset": "assets/reference-12.png",
+    "sha256": "9f32ab580541853a1696af6667f208385697f37137e08467ea8a07f38371788d"
+  },
+  {
+    "id": "13",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-4a3b93bc-5238-4903-bd6b-6e8e5ec27e50.png",
+    "asset": "assets/reference-13.png",
+    "sha256": "7ca44ebfb017492dee8b155fb37616ff9bc96fdf9e3830ebab649dc9625b33fc"
+  },
+  {
+    "id": "14",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-ef454e5f-a7c0-4a8b-8f29-18107a2fb79e.png",
+    "asset": "assets/reference-14.png",
+    "sha256": "0603e14de146ee7193d7e5d84bdc7e59e23e4e201e9de38fe0e3c5c7bf27c314"
+  },
+  {
+    "id": "15",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-baeb0f20-2482-4e9c-8d4d-a4cc299fedb4.png",
+    "asset": "assets/reference-15.png",
+    "sha256": "e6181c9faa4b3b6882badd8c62a09418c0bca47918ec7d370b4e952140d3475e"
+  },
+  {
+    "id": "16",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-b8c65ffb-789b-41c6-953d-c38b071b5225.png",
+    "asset": "assets/reference-16.png",
+    "sha256": "f61fcfb65c0bdda64bc90b7361e21c760113481f9915a5e6a542f63b19329ed6"
+  },
+  {
+    "id": "17",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-023c9caa-ec3e-47bf-8c94-901566d6ddea.png",
+    "asset": "assets/reference-17.png",
+    "sha256": "cdd89b25a5cb48c0727ae28e91726f9720ae3a9d56c7c9a7f65bb991bab7da3a"
+  },
+  {
+    "id": "18",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-e6bac0cb-c6d2-4a43-bc9d-5a3095d6f46c.png",
+    "asset": "assets/reference-18.png",
+    "sha256": "c75d99b112076dcc33053ebd0de1d708fc1c405398cb80fc1309b244327dfc57"
+  },
+  {
+    "id": "19",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-f3198dc5-8744-4264-9f25-881878639dc0.png",
+    "asset": "assets/reference-19.png",
+    "sha256": "6a76dff45b0097c94fea96a42d0a17d89bc338ca0477068d7bff82e2c9dbb520"
+  },
+  {
+    "id": "20",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-31643c44-734f-4fca-9c3c-c7a7713fde71.png",
+    "asset": "assets/reference-20.png",
+    "sha256": "c618988a9c27195b1aea5f379906a0c1a27a1a54d72575ace047e7edb39adb5d"
+  },
+  {
+    "id": "21",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-f3788335-2181-4838-93de-03910b6bf85b.png",
+    "asset": "assets/reference-21.png",
+    "sha256": "af14a1b388c9920ccead752cf4cf206c1c04cfd349a7c333291db9a7bf7a9a99"
+  },
+  {
+    "id": "22",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-dec76bdd-f052-4540-a7af-62e329da876a.png",
+    "asset": "assets/reference-22.png",
+    "sha256": "9fbabf4398106022da7fef37d03bdb2473e477c18baecda019ed8bfc77b4d7e5"
+  },
+  {
+    "id": "23",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-d43d266c-85d5-486f-9908-7f2cd5d39651.png",
+    "asset": "assets/reference-23.png",
+    "sha256": "9ebf090f4435d6b9ba595b9a289a35ad213be7bd8496e6e74aabfef642ccc1df"
+  },
+  {
+    "id": "24",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-be41ff61-c3a6-4ddb-aeb6-f01525f79b44.png",
+    "asset": "assets/reference-24.png",
+    "sha256": "f43b01c2f92a00a09c322c71cedb57de3fb11702edeb8ac21a6e03dd844df446"
+  },
+  {
+    "id": "25",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-2d741496-5062-4904-af67-e111ebfcc20b.png",
+    "asset": "assets/reference-25.png",
+    "sha256": "1752a2ea2aebe3ffef5fa766f33e5f78a00262bf3b31aa1a6ae72840bb1fe265"
+  },
+  {
+    "id": "26",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-059cfa0a-23f7-43bb-943b-4ccf1189cb2b.png",
+    "asset": "assets/reference-26.png",
+    "sha256": "b7b4ba0fb9d9d0204449311b8bf074ff8453c5176245d06c92db99307d774875"
+  },
+  {
+    "id": "27",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-706d2039-5b3e-4ed2-a6d1-bdcd18e2a792.png",
+    "asset": "assets/reference-27.png",
+    "sha256": "8839ff1d5bc3bdd5d7a4071d0a017f898350f7800ba4d51d1deb005fb8d9e019"
+  },
+  {
+    "id": "28",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-0f474c39-a4a9-4f39-8cac-08382f50df3a.png",
+    "asset": "assets/reference-28.png",
+    "sha256": "55380fb07294643e1ffb9a8c14cf05bd7ccc91bb5d797d6bfea45f94df584659"
+  },
+  {
+    "id": "29",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-31f4645b-271c-47f1-bb3f-bd3c7b81052b.png",
+    "asset": "assets/reference-29.png",
+    "sha256": "89249b7a0be5840b5d21cd4c92fae699aebf5226ccb8bc42e6890b886c474755"
+  },
+  {
+    "id": "30",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-65ce891a-f946-44df-ab5a-38cf112b504f.png",
+    "asset": "assets/reference-30.png",
+    "sha256": "1bd1f80dcd2635eaff5b3e79a99b82c983fcb87686506884ed51de5a84a1c565"
+  },
+  {
+    "id": "31",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-8f0a578a-829a-4f1c-a536-a20485b7057a.png",
+    "asset": "assets/reference-31.png",
+    "sha256": "01ccf1c25976fea3999f6cc0ef80a208d75ef4d278934b34ba07f9ed0c09fd1a"
+  },
+  {
+    "id": "32",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-ca561e1d-785b-47f6-9fa4-88f931249fb3.png",
+    "asset": "assets/reference-32.png",
+    "sha256": "3d49c3eaabf08902de74ecf0ab77a4f9ab47849328a7370bd5e965c10b3d8234"
+  },
+  {
+    "id": "33",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-638555dd-2563-448a-a5a0-5602cdc072d5.png",
+    "asset": "assets/reference-33.png",
+    "sha256": "6f9323325266e1cc9c001823a38c4bd9a1d0f13a0de91007541d82e4a22b878a"
+  },
+  {
+    "id": "34",
+    "source": "/var/folders/xl/kfwtc2r11ln2c50_28x2l91c0000gn/T/codex-clipboard-1ea94e57-0509-4ec7-a578-3617873e5cf8.png",
+    "asset": "assets/reference-34.png",
+    "sha256": "f8580b3d402a70e61896a90714636d1562aaa31f3f59360eac4ca88b205e2c2b"
+  }
+]
