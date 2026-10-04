@@ -2,7 +2,7 @@
 
 Status: **parked** (drafted 2026-10-04; not started). Pick up from "Decisions needed" at the end.
 
-Progress (2026-10-05): prerequisite A6 is done. The project is in git (`github.com/hetissh/radar-stdio`, branches `main` and `develop`) and reorganised so `site/` is the publish root, with build scripts in `tools/`. Decisions 1 and 2 are made: a Partner **development store**, hosted on **Cloudflare Pages**. Phase 0 is in progress (see "Phase 0: setup" below). Store `radar-stdio-dev.myshopify.com` is created, with the Headless channel installed. Both Storefront tokens are verified with `tools/check_shopify.py` (API 2026-10 served, 0 products). The Dev Dashboard app is installed and its Admin token verified. Cloudflare Pages can be connected to `main` (pushed 2026-10-05). **Phase 1 is done.** The store is in INR. `tools/shopify_import.py` imported all 34 pieces and 4 collections in 3 min 15 s, and the read-back check passes ("all fields round-trip"). The Storefront API sees 34 products on the Headless channel, the store holds 34 files (one artwork each, none duplicated), and the sold-out test sizes are in place. Next: Phase 2 (`tools/sync_shopify.py`, Shopify as the data source).
+Progress (2026-10-05): prerequisite A6 is done. The project is in git (`github.com/hetissh/radar-stdio`, branches `main` and `develop`) and reorganised so `site/` is the publish root, with build scripts in `tools/`. Decisions 1 and 2 are made: a Partner **development store**, hosted on **Cloudflare Pages**. Phase 0 is in progress (see "Phase 0: setup" below). Store `radar-stdio-dev.myshopify.com` is created, with the Headless channel installed. Both Storefront tokens are verified with `tools/check_shopify.py` (API 2026-10 served, 0 products). The Dev Dashboard app is installed and its Admin token verified. Cloudflare Pages can be connected to `main` (pushed 2026-10-05). **Phase 1 is done.** The store is in INR. `tools/shopify_import.py` imported all 34 pieces and 4 collections in 3 min 15 s, and the read-back check passes ("all fields round-trip"). The Storefront API sees 34 products on the Headless channel, the store holds 34 files (one artwork each, none duplicated), and the sold-out test sizes are in place. **Phase 2 code is done** (see "Phase 2: how the sync works" below). The sync reproduces `products.json` exactly from the store, and a merchant-style product (made with no radar fields) was picked up, given id 35, ring tees and bearing 18°, rendered from the Shopify CDN, then archived. Waiting on: the Cloudflare Pages project, its deploy hook, and registering the webhooks.
 
 ## The approach
 
@@ -95,10 +95,10 @@ Cloudflare Pages project (the owner sets this up in the Cloudflare dashboard: Wo
 | Repository | `hetissh/radar-stdio` |
 | Production branch | `main` (every other branch, e.g. `develop`, gets a preview URL) |
 | Framework preset | None |
-| Build command | `python3 tools/build_data.py && python3 tools/build_config.py` |
+| Build command | `python3 tools/sync_shopify.py --if-configured && python3 tools/build_data.py && python3 tools/build_config.py` (from Phase 2) |
 | Build output directory | `site` |
 | Root directory | *(blank: the repo root, so a `functions/` folder there becomes Pages Functions in Phase 2)* |
-| Variables | `SHOPIFY_STORE_DOMAIN`, `SHOPIFY_API_VERSION`, `SHOPIFY_STOREFRONT_PUBLIC_TOKEN` as plain text; `SHOPIFY_STOREFRONT_PRIVATE_TOKEN`, `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET` as **Secret**. Set them for Production and Preview. All are optional until Phase 1. |
+| Variables | `SHOPIFY_STORE_DOMAIN`, `SHOPIFY_API_VERSION`, `SHOPIFY_STOREFRONT_PUBLIC_TOKEN` as plain text; `SHOPIFY_STOREFRONT_PRIVATE_TOKEN`, `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET` as **Secret**. Set them for Production and Preview. All are optional until Phase 1. Phase 2 adds `DEPLOY_HOOK_URL` (Secret) and, optionally, `CF_API_TOKEN` (Secret), `CF_ACCOUNT_ID` and `CF_PAGES_PROJECT`. |
 
 The build re-runs the data checks (a bad `products.json` fails the deploy) and doesn't touch images: `build_images.py` needs macOS `sips`, so thumbnails stay committed. Stress and perf modes stay off on `*.pages.dev` (not a dev host).
 
@@ -138,6 +138,33 @@ Gotcha: `productSet` with a `customId` identifier only recognises that metafield
 ### Phase 2: Shopify as the data source
 `tools/sync_shopify.py` pages through products and collections and writes the same `site/data/*.json` the pages already use. `tools/build_data.py` checks run on the synced data, so a bad edit fails the build instead of breaking the site. A server function receives Shopify webhooks (product/collection/inventory), verifies the HMAC signature and triggers a debounced rebuild. Images come from Shopify's CDN with on-the-fly resizing, so `tools/build_images.py` is no longer needed for Shopify images.
 *Done when* an edit in Shopify appears on the site within minutes, with no manual step.
+
+#### Phase 2: how the sync works (2026-10-05)
+
+**Sync** (`tools/sync_shopify.py`) reads the store with the Admin API and writes `site/data/products.json` in the same shape, then `build_data.py` runs every check on it. So a bad edit in Shopify fails the build, and Cloudflare keeps serving the last good deployment.
+- **Radar collections** are the ones with a `radar.order` metafield and published to Headless, in that order. Other collections, such as a marketing "Sale", are ignored. More than 4 fails the build, because the homepage locator draws 4.
+- **Pieces** are ACTIVE products published to Headless that belong to a radar collection. Each one's position is its rank in that collection's manual order in Shopify.
+- **Pieces made in the admin** get defaults: artwork title = product title, category = product type, empty discipline and year, chalk colour. They are also given the next free `radar.id`, a ring (their first radar collection) and a free bearing (middle of the widest gap, like `freeBearing()`). Those three are saved back to Shopify (`metafieldsSet`) so they never move. A saved-back value fires a product webhook, which costs one extra no-op build.
+- **Artwork** is the bundled `site/assets` file named in `radar.image` when it exists; otherwise it is the product's featured image as a `cdn.shopify.com` URL. `shared.js` (`remoteArt`, `cdnWidth`) asks the CDN for 320/640px versions (the CDN picks AVIF or WebP itself), and the product lens asks for 1600px. `export.py` links the CDN image, and `build_data.py` accepts either form. Pieces with no image or no variants are skipped with a warning.
+- **Price** is the lowest variant price. **original** is the highest compare-at price, or the price when there's none.
+- **Modes:** `--check` compares only (exit 1 on any difference, listing the changed fields). `--if-configured` falls back to the committed `products.json` when there are no Admin keys, which preview builds without secrets rely on. `--no-write-back`.
+- **Verified:** the store reproduces today's file exactly; only the `_about` text changed, and all 40 generated files are identical. A product made like a merchant would (no radar fields, Shopify image only, in Tees) was picked up and saved back as id 35, ring tees, bearing 18°. It showed on the product page (lock-on, "11 of 11", lens at 1600px from the CDN, 73 KB at 640px) and in catalogue search with no console errors. It was then **archived** (still in the store under Archived) and the data went back to 34 pieces.
+
+**Rebuild on change** (`functions/api/shopify-webhook.js`, a Pages Function at `/api/shopify-webhook`):
+- Checks the `X-Shopify-Hmac-Sha256` signature against `SHOPIFY_CLIENT_SECRET` (constant-time, Web Crypto). Bad or missing signatures get 401, and other topics are ignored.
+- Then POSTs `DEPLOY_HOOK_URL`. A failed trigger returns 502 so Shopify retries.
+- **Coalescing:** with `CF_API_TOKEN`, `CF_ACCOUNT_ID` and `CF_PAGES_PROJECT` set, it first asks the Cloudflare API whether a production deployment is still queued, initializing or cloning (it hasn't synced yet). If so it skips, because that build will include the change. A burst of edits then costs at most two builds. That matters on the free plan's 500 builds a month. If the API can't be reached it rebuilds anyway.
+- `site/_routes.json` limits Functions to `/api/*`, so page and image requests don't count as Function invocations.
+- Tested with Node 18 using real HMAC signatures: valid, tampered body, wrong secret, missing or garbage signature, other topic, build queued (skipped), build running (triggered) and deploy hook failure (502). All 9 behaved as expected.
+
+**Subscriptions** (`tools/shopify_webhooks.py <site URL>`): product, collection, and product/collection publication create, update and delete (12 topics), with the payload trimmed to the id. It is re-runnable and `--list` / `--remove` are available. Stock changes aren't subscribed, because live stock is Phase 3. Note that Shopify may still send `products/update` for some stock changes; that just costs a no-op build.
+
+**To finish Phase 2 (owner, in Cloudflare):**
+1. Create the Pages project (settings above) with the Phase 2 build command and the Shopify variables. It needs `SHOPIFY_CLIENT_ID` and `SHOPIFY_CLIENT_SECRET` as Secrets, or the build falls back to the committed data.
+2. Settings → Builds → **Deploy hooks** → add one for `main` and save its URL as the `DEPLOY_HOOK_URL` secret.
+3. Optional, for coalescing: create an API token with **Account → Cloudflare Pages → Read**, and set `CF_API_TOKEN` (Secret), `CF_ACCOUNT_ID` and `CF_PAGES_PROJECT`.
+4. Redeploy, then run `python3 tools/shopify_webhooks.py https://<project>.pages.dev`.
+5. Test: edit a product title in Shopify, and within a couple of minutes a build runs and the site shows it.
 
 ### Phase 3: Live prices, stock and the real bag
 Product page fetches live price, compare-at and per-size stock; sold-out size rings are struck through; "Add to bag" adds the real variant; the snapshot is only a fallback. The bag becomes a Shopify cart (cart id in localStorage, add/change/remove via the Cart API, real line prices, discounts, subtotal; expired carts and stock races handled). "Checkout ↗" goes to Shopify checkout; discount codes via the cart. Shopify's thank-you and order-status pages take over after payment.

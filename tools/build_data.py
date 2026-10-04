@@ -67,6 +67,10 @@ def check_media(p):
             assert mb <= MAX_VIDEO_MB, f'{at}: video is {mb:.1f} MB (limit {MAX_VIDEO_MB} MB)'
 for p in products:
     check_media(p)
+    # Artwork: a bundled file in assets/ (thumbnails from build_images.py) or, for pieces made in the Shopify admin,
+    # a Shopify CDN URL (see sync_shopify.py).
+    assert p['image'].startswith('https://cdn.shopify.com/') or (root / 'assets' / p['image']).is_file(), \
+        f'piece {p["id"]}: artwork {p["image"]} not found in assets/'
 
 def summary(p):
     return {k: v for k, v in p.items() if k not in DETAIL_ONLY}

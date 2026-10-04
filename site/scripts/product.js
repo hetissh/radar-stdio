@@ -316,7 +316,7 @@
   if(!on)return;
   // Full resolution is fetched only when the lens opens: the original artwork, or a photo's 1280px version.
   loupe.classList.toggle('photo',photo);
-  loupe.style.backgroundImage='url('+(photo?mediaThumb(media[current].src,1280,'jpg'):'assets/'+p.image)+')';
+  loupe.style.backgroundImage='url("'+(photo?mediaThumb(media[current].src,1280,'jpg'):remoteArt(p.image)?cdnWidth(p.image,1600):'assets/'+p.image)+'")';
   lens={x:.5,y:.5};target.classList.add('inspecting');target.tabIndex=0;target.setAttribute('aria-label','Art detail lens. Use the arrow keys to move it, Escape to close.');placeLoupe();
  }
  loupeToggle.addEventListener('click',()=>setLoupe(!loupeOn));

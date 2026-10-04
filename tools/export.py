@@ -24,6 +24,9 @@ home = json.loads(home_path.read_text())
 # shared.js's art() switches to these when `assetUrls` is defined.
 urls = {}
 for name in sorted({p['image'] for p in home['products']}):
+    if name.startswith('https://cdn.shopify.com/'):  # artwork only on Shopify's CDN: link the 640px version
+        urls[name] = name + ('&' if '?' in name else '?') + 'width=640'
+        continue
     thumbnail = root / 'assets' / 'thumbs' / (Path(name).stem + '-640.jpg')
     assert thumbnail.exists(), f'{thumbnail.name} missing: run python3 tools/build_images.py'
     urls[name] = 'data:image/jpeg;base64,' + base64.b64encode(thumbnail.read_bytes()).decode()

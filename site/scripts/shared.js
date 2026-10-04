@@ -5,12 +5,17 @@ const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt
 const escLines=value=>esc(value).replace(/\n/g,'<br>');
 // Artwork uses thumbnails from build_images.py: AVIF where supported, JPEG otherwise, 320 or 640px wide
 // depending on display size. Options: sizes (CSS width hint), className, eager. The originals stay in assets/.
-const thumb=(e,width,ext)=>'assets/thumbs/'+e.image.replace(/\.png$/,'')+'-'+width+'.'+ext;
+// A piece created in the Shopify admin has a cdn.shopify.com URL instead: the CDN resizes it by ?width= and picks
+// AVIF or WebP itself, so it needs no <source> (see tools/sync_shopify.py).
+const remoteArt=src=>/^https:\/\/cdn\.shopify\.com\//.test(src);
+const cdnWidth=(url,width)=>{const u=new URL(url);u.searchParams.set('width',width);return u.href;};
+const thumb=(e,width,ext)=>remoteArt(e.image)?cdnWidth(e.image,width):'assets/thumbs/'+e.image.replace(/\.png$/,'')+'-'+width+'.'+ext;
 function art(e,{sizes='160px',className='',eager=e.id==='01'}={}){
  const attrs=' alt="'+esc(e.title)+'"'+(className?' class="'+className+'"':'')+' loading="'+(eager?'eager':'lazy')+'" decoding="async"';
  // The portable export inlines one JPEG per image instead (see export.py).
  if(typeof assetUrls!=='undefined')return '<img src="'+assetUrls[e.image]+'"'+attrs+'>';
  const set=ext=>thumb(e,320,ext)+' 320w, '+thumb(e,640,ext)+' 640w';
+ if(remoteArt(e.image))return '<img src="'+esc(thumb(e,320))+'" srcset="'+esc(set())+'" sizes="'+sizes+'"'+attrs+'>';
  return '<picture><source type="image/avif" srcset="'+set('avif')+'" sizes="'+sizes+'"><img src="'+thumb(e,320,'jpg')+'" srcset="'+set('jpg')+'" sizes="'+sizes+'"'+attrs+'></picture>';
 }
 const money=n=>'₹'+n.toLocaleString('en-IN');

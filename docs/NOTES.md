@@ -24,11 +24,15 @@
 | `tools/check_shopify.py` | Checks the keys in `.env` against the store: both Storefront tokens, the served API version and, once set, the Admin client credentials and granted scopes. Prints results, never key values. |
 | `tools/shopify_api.py` | Minimal Admin API client for the tools (standard library): client-credentials token in memory, GraphQL with throttle retry and `userErrors` raised, paging, staged file uploads, job polling. |
 | `tools/shopify_import.py` | Imports `site/data/products.json` into the store (metafield definitions, 4 manual collections, 34 products with XS–XL variants, artwork, Headless publishing, collection order) and checks every field round-trips. Re-runnable; `--check` is read-only; `--only 21,32`; `--reset-stock`. See docs/shopify-plan.md, Phase 1. |
+| `tools/sync_shopify.py` | Phase 2: reads the store and writes `site/data/products.json` (radar collections, active Headless pieces, Shopify CDN artwork for admin-made pieces); assigns and saves back ids, rings and bearings for new pieces. `--check`, `--if-configured` (Cloudflare builds), `--no-write-back`. |
+| `tools/shopify_webhooks.py` | Subscribes the store's product and collection webhooks to `<site>/api/shopify-webhook`; `--list`, `--remove`. |
+| `functions/api/shopify-webhook.js` | Cloudflare Pages Function: checks the Shopify signature and triggers a rebuild through the deploy hook, skipping when a queued build will already include the change. |
+| `site/_routes.json` | Cloudflare Pages: run Functions only for `/api/*`. |
 | `.env.example` | Template for the git-ignored `.env`: Shopify store domain, API version, Storefront tokens, Dev Dashboard app credentials. |
 | `tools/make_demo_video.swift` | Makes a stand-in MP4 (slow push-in across a still) and its poster with macOS's built-in AVFoundation: `swift tools/make_demo_video.swift in.png out.mp4 poster.jpg 6`. Demo use only. |
 | `assets/thumbs/` | Generated: `reference-NN-320` and `-640`, each as `.avif` and `.jpg`. |
 
-Adding or changing a piece: edit `data/products.json` (give a new piece a free bearing; `freeBearing()` in the console prints one), add its image to `assets/`, then run `python3 build_images.py && python3 build_data.py && python3 export.py`.
+Adding or changing a piece: with the Shopify keys set, edit it in the Shopify admin and run `python3 tools/sync_shopify.py && python3 tools/build_data.py` (Cloudflare does this on every build). Without them, edit `data/products.json` (give a new piece a free bearing; `freeBearing()` in the console prints one), add its image to `assets/`, then run `python3 build_images.py && python3 build_data.py && python3 export.py`.
 
 Load order on every page: inline theme script in `<head>`, then `shared.css`, then page CSS. At the end of `<body>`, `shared.js` runs, then the page script. Page scripts rely on the globals from shared.js.
 
@@ -254,7 +258,7 @@ Checked in the in-app browser:
 
 Homepage: the only changes are the CATALOGUE nav link and the "View all 34 ↗" link. Compared with the pre-catalogue homepage, computed style by computed style (1,272 element and pseudo-element entries at 1280×800 and 375×812, dark and light, with the three new elements excluded): the only differences are the nav's width, the intro paragraph's height and, on mobile, the page height growing by 32px to make room for the link. That temporary harness is in the macOS Trash (`radar-catalogue-baseline-…`).
 
-Caching: the local preview server sends no cache headers, so a browser can keep an old shared.js after edits. That happened here as "bearingOf is not defined". Every page now links its CSS and JS with a version string (`?v=2026-10-05b`). Bump it in index.html, product.html and catalogue.html whenever shared or page files change. export.py matches the links with or without the version.
+Caching: the local preview server sends no cache headers, so a browser can keep an old shared.js after edits. That happened here as "bearingOf is not defined". Every page now links its CSS and JS with a version string (now `?v=2026-10-05c`). Bump it in index.html, product.html and catalogue.html whenever shared or page files change. export.py matches the links with or without the version.
 
 ## Product page
 
