@@ -1,6 +1,6 @@
 """Build display-size thumbnails for every reference image, leaving the supplied originals untouched.
 
-Run: python3 build_images.py   (macOS; uses the built-in `sips`, no installs needed)
+Run: python3 tools/build_images.py   (macOS; uses the built-in `sips`, no installs needed)
 
 For each assets/reference-NN.png it writes, into assets/thumbs/:
   reference-NN-320.avif / .jpg   cards, contact panel (artwork is ~140-160 CSS px wide; 320 covers 2x screens)
@@ -13,7 +13,7 @@ Thumbnails newer than their source are skipped, so re-running is cheap.
 from pathlib import Path
 import subprocess
 
-root = Path(__file__).resolve().parent
+root = Path(__file__).resolve().parent.parent / 'site'  # the published site folder
 source_dir = root / 'assets'
 out_dir = source_dir / 'thumbs'
 out_dir.mkdir(exist_ok=True)

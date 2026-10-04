@@ -1,6 +1,6 @@
 """Split the catalogue source into the small files each page loads.
 
-Run: python3 build_data.py   (after editing data/products.json)
+Run: python3 tools/build_data.py   (after editing data/products.json)
 
 Source of truth: data/products.json  { collections: [...], products: [...] }
 Generated (do not edit by hand):
@@ -20,7 +20,7 @@ DETAIL_ONLY = ('description', 'status', 'media')
 MAX_MEDIA = 8
 MAX_VIDEO_MB = 8
 
-root = Path(__file__).resolve().parent
+root = Path(__file__).resolve().parent.parent / 'site'  # the published site folder
 data = root / 'data'
 source = json.loads((data / 'products.json').read_text())
 collections, products = source['collections'], source['products']
