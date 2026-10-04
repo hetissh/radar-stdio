@@ -2,9 +2,11 @@
 
 Status: **parked** (drafted 2026-10-04; not started). Pick up from "Decisions needed" at the end.
 
+Progress (2026-10-05): prerequisite A6 is done. The project is in git (`github.com/hetissh/radar-stdio`, branches `main` and `develop`) and reorganised so `site/` is the publish root, with build scripts in `tools/`. Decisions 1 and 2 are made: a Partner **development store**, hosted on **Cloudflare Pages**. Phase 0 is in progress (see "Phase 0: setup" below). Store `radar-stdio-dev.myshopify.com` is created, with the Headless channel installed. Both Storefront tokens are verified with `tools/check_shopify.py` (API 2026-10 served, 0 products). Phase 1 is waiting on the Dev Dashboard app (client ID and secret).
+
 ## The approach
 
-Keep the custom front end (radar, catalogue, product page) and use **Shopify for everything commerce**: products, prices, stock, cart, checkout, payments, orders, tax, shipping and customer emails. This is a "headless" setup. Pages keep loading the same kind of fast `data/*.json` files, but those files are generated from Shopify instead of `data/products.json`. Anything that changes minute to minute (stock, price) and the bag itself talk to Shopify live. Checkout is Shopify's hosted checkout, which handles payment security and compliance.
+Keep the custom front end (radar, catalogue, product page) and use **Shopify for everything commerce**: products, prices, stock, cart, checkout, payments, orders, tax, shipping and customer emails. This is a "headless" setup. Pages keep loading the same kind of fast `site/data/*.json` files, but those files are generated from Shopify instead of `site/data/products.json`. Anything that changes minute to minute (stock, price) and the bag itself talk to Shopify live. Checkout is Shopify's hosted checkout, which handles payment security and compliance.
 
 ```
 Shopify admin (edit products, prices, stock, media)
@@ -30,7 +32,7 @@ Why not Shopify's own front-end framework (Hydrogen)? It would mean rewriting th
 | 3 | Headless sales channel on that store | Gives a *public* Storefront API token (safe in the browser) and a *private* one (server only) |
 | 4 | Custom app with Admin API access (dev store) | For the one-time import and webhooks. Never in the browser |
 | 5 | Production store and plan | Before launch. Check current plan pricing and that it includes the Headless channel |
-| 6 | Git repository | **The project is not under version control yet.** Needed before connecting real infrastructure; restores proper rollback |
+| 6 | Git repository | **Done** (2026-10-05): `github.com/hetissh/radar-stdio` |
 | 7 | Hosting for the site and one small server function | e.g. Vercel, Netlify or Cloudflare Pages |
 | 8 | Domain and DNS access | Shop domain and storefront domain |
 
@@ -58,7 +60,7 @@ Keys go into a local `.env` (never committed) and the host's secret settings.
 
 ## Data mapping
 
-| Today (`data/products.json`) | In Shopify |
+| Today (`site/data/products.json`) | In Shopify |
 |---|---|
 | Collection, curated order | Collection, manually sorted |
 | `name`, `description` | Product title and description |
@@ -79,12 +81,45 @@ Keys go into a local `.env` (never committed) and the host's secret settings.
 Git, `.env.example`, a small config module (store domain, API version, public token), host with a build step running the existing scripts, separate dev/prod settings.
 *Done when* a push deploys the current site unchanged and keys are set on the host and locally.
 
+#### Phase 0: setup (2026-10-05)
+
+Done in the repo:
+- `.gitignore` ignores `.env`, `.env.*` (except `.env.example`), `.dev.vars`, `.wrangler/` and the generated `site/scripts/config.js`.
+- `.env.example` lists every key, which ones are secret, and where each comes from.
+- `tools/build_config.py` writes `site/scripts/config.js` (`radarConfig.shopify`) from the environment, or from `.env` locally. It writes only the domain, API version and **public** Storefront token, never the private token or client secret. With nothing set it writes `shopify: null` and the site runs on its own data as before. Partial or malformed settings fail the build. No page loads `config.js` yet; the bag starts using it in Phase 3. `load_env()` is shared with the later import and sync scripts.
+
+Cloudflare Pages project (the owner sets this up in the Cloudflare dashboard: Workers & Pages → Create → Pages → Connect to Git):
+
+| Setting | Value |
+|---|---|
+| Repository | `hetissh/radar-stdio` |
+| Production branch | `main` (every other branch, e.g. `develop`, gets a preview URL) |
+| Framework preset | None |
+| Build command | `python3 tools/build_data.py && python3 tools/build_config.py` |
+| Build output directory | `site` |
+| Root directory | *(blank: the repo root, so a `functions/` folder there becomes Pages Functions in Phase 2)* |
+| Variables | `SHOPIFY_STORE_DOMAIN`, `SHOPIFY_API_VERSION`, `SHOPIFY_STOREFRONT_PUBLIC_TOKEN` as plain text; `SHOPIFY_STOREFRONT_PRIVATE_TOKEN`, `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET` as **Secret**. Set them for Production and Preview. All are optional until Phase 1. |
+
+The build re-runs the data checks (a bad `products.json` fails the deploy) and doesn't touch images: `build_images.py` needs macOS `sips`, so thumbnails stay committed. Stress and perf modes stay off on `*.pages.dev` (not a dev host).
+
+To check after the first deploy:
+- **Pretty URLs:** Pages serves `product.html` at `/product` and redirects `.html` links there. Check that `?id=` survives the redirect and the garment morph still runs. If the extra redirect matters, links can drop `.html` on Pages only.
+- **404s:** without a `404.html`, Pages treats the site as a single-page app and answers any unknown path with the homepage (200). Add a styled `site/404.html` (Phase 7, SEO).
+- **Caching:** Pages revalidates every file by default (ETag), which is safe with the `?v=` versions. Longer cache rules for thumbnails can go in `site/_headers` later.
+
+Phase 0 is done when `main` deploys to `*.pages.dev` unchanged and the store's variables are set there and in `.env`.
+
+Keys from Shopify (the owner creates them; they go straight into `.env` and Cloudflare, never into chat):
+1. **Storefront API:** in the dev store admin, install the **Headless** sales channel, create a storefront, and copy its public and private access tokens.
+2. **Admin API:** Shopify now creates apps in the **Dev Dashboard**. Legacy custom apps made in the store admin are being retired, so check which your store offers. Create an app, give it the Admin API scopes `write_products`, `write_inventory`, `write_files`, `write_publications` and `read_locations` (Phase 2 adds the webhooks), release a version and install it on the dev store. Copy the **client ID** and **client secret**. Scripts exchange these for a short-lived Admin token (client credentials grant), so no long-lived admin token is stored.
+3. `SHOPIFY_API_VERSION`: the newest stable version shown in the app's API version setting.
+
 ### Phase 1: Catalogue model and one-time import
-Metafield definitions, 4 collections, size option. `tools/shopify_import.py` reads `data/products.json` and creates the 34 products (variants, prices, compare-at, metafields, media with alt, collection order). Re-runnable (updates, no duplicates). Stand-in demo media skipped or flagged.
+Metafield definitions, 4 collections, size option. `tools/shopify_import.py` reads `site/data/products.json` and creates the 34 products (variants, prices, compare-at, metafields, media with alt, collection order). Re-runnable (updates, no duplicates). Stand-in demo media skipped or flagged.
 *Done when* the dev store matches today's catalogue and a check script confirms every field round-trips.
 
 ### Phase 2: Shopify as the data source
-`tools/sync_shopify.py` pages through products and collections and writes the same `data/*.json` the pages already use. `build_data.py` checks run on the synced data, so a bad edit fails the build instead of breaking the site. A server function receives Shopify webhooks (product/collection/inventory), verifies the HMAC signature and triggers a debounced rebuild. Images come from Shopify's CDN with on-the-fly resizing, so `build_images.py` is no longer needed for Shopify images.
+`tools/sync_shopify.py` pages through products and collections and writes the same `site/data/*.json` the pages already use. `tools/build_data.py` checks run on the synced data, so a bad edit fails the build instead of breaking the site. A server function receives Shopify webhooks (product/collection/inventory), verifies the HMAC signature and triggers a debounced rebuild. Images come from Shopify's CDN with on-the-fly resizing, so `tools/build_images.py` is no longer needed for Shopify images.
 *Done when* an edit in Shopify appears on the site within minutes, with no manual step.
 
 ### Phase 3: Live prices, stock and the real bag
@@ -118,10 +153,10 @@ Production store, live payment gateway, GST and shipping, published policies, DN
 
 | File | Change |
 |---|---|
-| `shared.js` | `bag` becomes a thin layer over the Shopify cart; `shopifyFetch()` helper with the public token; links by handle |
-| `product.js` | Live price/stock, sold-out sizes, add-to-bag by variant id, media from Shopify |
-| `build_data.py` | Accepts synced Shopify data; keeps all checks |
-| New | `tools/shopify_import.py`, `tools/sync_shopify.py`, `functions/shopify-webhook`, `.env.example`, `config.js` |
+| `site/scripts/shared.js` | `bag` becomes a thin layer over the Shopify cart; `shopifyFetch()` helper with the public token; links by handle |
+| `site/scripts/product.js` | Live price/stock, sold-out sizes, add-to-bag by variant id, media from Shopify |
+| `tools/build_data.py` | Accepts synced Shopify data; keeps all checks |
+| New | `tools/shopify_import.py`, `tools/sync_shopify.py`, `functions/shopify-webhook`, `.env.example`, `site/scripts/config.js` |
 | Unchanged | Radar, rails, catalogue views and Field, stress mode, light/dark, garment transition |
 
 ## Decisions needed

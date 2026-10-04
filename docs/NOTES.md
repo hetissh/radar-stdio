@@ -20,6 +20,9 @@
 | `build_images.py` | Makes display-size thumbnails of every reference image with macOS `sips` (no installs). Run it after adding or changing an image. |
 | `assets/` | Supplied logo and the 34 reference images (originals, unchanged). |
 | `assets/pieces/<id>/` | Product media files (photos, MP4 videos, posters, `.vtt` captions) referenced from a piece's `media` list. |
+| `tools/build_config.py` | Writes `site/scripts/config.js` (git-ignored) with the public Shopify settings from the environment or `.env`; `shopify: null` when none are set. Runs on every Cloudflare Pages build. See docs/shopify-plan.md, Phase 0. |
+| `tools/check_shopify.py` | Checks the keys in `.env` against the store: both Storefront tokens, the served API version and, once set, the Admin client credentials and granted scopes. Prints results, never key values. |
+| `.env.example` | Template for the git-ignored `.env`: Shopify store domain, API version, Storefront tokens, Dev Dashboard app credentials. |
 | `tools/make_demo_video.swift` | Makes a stand-in MP4 (slow push-in across a still) and its poster with macOS's built-in AVFoundation: `swift tools/make_demo_video.swift in.png out.mp4 poster.jpg 6`. Demo use only. |
 | `assets/thumbs/` | Generated: `reference-NN-320` and `-640`, each as `.avif` and `.jpg`. |
 
