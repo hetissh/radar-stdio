@@ -22,6 +22,8 @@
 | `assets/pieces/<id>/` | Product media files (photos, MP4 videos, posters, `.vtt` captions) referenced from a piece's `media` list. |
 | `tools/build_config.py` | Writes `site/scripts/config.js` (git-ignored) with the public Shopify settings from the environment or `.env`; `shopify: null` when none are set. Runs on every Cloudflare Pages build. See docs/shopify-plan.md, Phase 0. |
 | `tools/check_shopify.py` | Checks the keys in `.env` against the store: both Storefront tokens, the served API version and, once set, the Admin client credentials and granted scopes. Prints results, never key values. |
+| `tools/shopify_api.py` | Minimal Admin API client for the tools (standard library): client-credentials token in memory, GraphQL with throttle retry and `userErrors` raised, paging, staged file uploads, job polling. |
+| `tools/shopify_import.py` | Imports `site/data/products.json` into the store (metafield definitions, 4 manual collections, 34 products with XS–XL variants, artwork, Headless publishing, collection order) and checks every field round-trips. Re-runnable; `--check` is read-only; `--only 21,32`; `--reset-stock`. See docs/shopify-plan.md, Phase 1. |
 | `.env.example` | Template for the git-ignored `.env`: Shopify store domain, API version, Storefront tokens, Dev Dashboard app credentials. |
 | `tools/make_demo_video.swift` | Makes a stand-in MP4 (slow push-in across a still) and its poster with macOS's built-in AVFoundation: `swift tools/make_demo_video.swift in.png out.mp4 poster.jpg 6`. Demo use only. |
 | `assets/thumbs/` | Generated: `reference-NN-320` and `-640`, each as `.avif` and `.jpg`. |

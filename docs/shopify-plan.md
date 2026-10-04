@@ -2,7 +2,7 @@
 
 Status: **parked** (drafted 2026-10-04; not started). Pick up from "Decisions needed" at the end.
 
-Progress (2026-10-05): prerequisite A6 is done. The project is in git (`github.com/hetissh/radar-stdio`, branches `main` and `develop`) and reorganised so `site/` is the publish root, with build scripts in `tools/`. Decisions 1 and 2 are made: a Partner **development store**, hosted on **Cloudflare Pages**. Phase 0 is in progress (see "Phase 0: setup" below). Store `radar-stdio-dev.myshopify.com` is created, with the Headless channel installed. Both Storefront tokens are verified with `tools/check_shopify.py` (API 2026-10 served, 0 products). Phase 1 is waiting on the Dev Dashboard app (client ID and secret).
+Progress (2026-10-05): prerequisite A6 is done. The project is in git (`github.com/hetissh/radar-stdio`, branches `main` and `develop`) and reorganised so `site/` is the publish root, with build scripts in `tools/`. Decisions 1 and 2 are made: a Partner **development store**, hosted on **Cloudflare Pages**. Phase 0 is in progress (see "Phase 0: setup" below). Store `radar-stdio-dev.myshopify.com` is created, with the Headless channel installed. Both Storefront tokens are verified with `tools/check_shopify.py` (API 2026-10 served, 0 products). The Dev Dashboard app is installed and its Admin token verified. Cloudflare Pages can be connected to `main` (pushed 2026-10-05). **Phase 1 is done.** The store is in INR. `tools/shopify_import.py` imported all 34 pieces and 4 collections in 3 min 15 s, and the read-back check passes ("all fields round-trip"). The Storefront API sees 34 products on the Headless channel, the store holds 34 files (one artwork each, none duplicated), and the sold-out test sizes are in place. Next: Phase 2 (`tools/sync_shopify.py`, Shopify as the data source).
 
 ## The approach
 
@@ -117,6 +117,23 @@ Keys from Shopify (the owner creates them; they go straight into `.env` and Clou
 ### Phase 1: Catalogue model and one-time import
 Metafield definitions, 4 collections, size option. `tools/shopify_import.py` reads `site/data/products.json` and creates the 34 products (variants, prices, compare-at, metafields, media with alt, collection order). Re-runnable (updates, no duplicates). Stand-in demo media skipped or flagged.
 *Done when* the dev store matches today's catalogue and a check script confirms every field round-trips.
+
+#### Phase 1: how the import works (2026-10-05)
+
+`python3 tools/shopify_import.py` (Admin API via `tools/shopify_api.py`):
+1. **Definitions:** creates any missing `radar.*` metafield definitions with Storefront read access. Products get `id` (type `id`, unique: the import's match key), `ring`, `bearing`, `artwork_title`, `category`, `discipline`, `year`, `image` (site asset file, so thumbnails keep working until Phase 4), `dark`, `status` and `media` (JSON, the current media list, until Phase 4). Collections get `copy` (the blurb, with real line breaks) and `order`.
+2. **Collections:** the 4 collections by handle (= site id), manually sorted, published to the Headless channel.
+3. **Products:** one `productSet` per piece, matched on `radar.id`:
+   - title, a slug handle (renames keep a redirect), escaped description, vendor RADAR STUDIO, type T-shirt, category tag
+   - a Size option with XS–XL variants: price, compare-at only when reduced, SKU `RADAR-<id>-<size>`, stock tracked and no overselling
+   - the artwork PNG uploaded once, with alt "Artwork: <title>"
+   - published to the Headless channel only
+4. **Order:** each collection is reordered to match `position`.
+5. **Check:** reads everything back and compares with `products.json` (every field, sizes, SKUs, collection, publishing, artwork, order, currency). `--check` runs only this.
+
+Test stock: 10 per size, set only when a product is created (or with `--reset-stock`), so a re-run never overwrites real stock. Sold out for Phase 3 testing: 06 XS, 13 XL, 21 S, 27 M and L, 32 XL. The store must be in INR (the import refuses otherwise). Stand-in demo media isn't uploaded; it stays in `radar.media`.
+
+Gotcha: `productSet` with a `customId` identifier only recognises that metafield in `metafields` when it is sent **without** `type` ("must contain the customId value" otherwise). The import sends every `radar.*` metafield without a type; the definitions supply it.
 
 ### Phase 2: Shopify as the data source
 `tools/sync_shopify.py` pages through products and collections and writes the same `site/data/*.json` the pages already use. `tools/build_data.py` checks run on the synced data, so a bad edit fails the build instead of breaking the site. A server function receives Shopify webhooks (product/collection/inventory), verifies the HMAC signature and triggers a debounced rebuild. Images come from Shopify's CDN with on-the-fly resizing, so `tools/build_images.py` is no longer needed for Shopify images.
