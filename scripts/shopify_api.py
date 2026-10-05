@@ -42,7 +42,7 @@ class Admin:
                                             'grant_type': 'client_credentials'}).encode(),
                                 {'Content-Type': 'application/json'})
         if status != 200:
-            raise SystemExit(f'Admin API: token request failed (HTTP {status}); run tools/check_shopify.py')
+            raise SystemExit(f'Admin API: token request failed (HTTP {status}); run scripts/check_shopify.py')
         self._token = json.loads(body)['access_token']
 
     def graphql(self, query, variables=None, attempts=6):

@@ -1,6 +1,6 @@
 // Makes a short stand-in product video (H.264 MP4) and its poster from a still image: a slow push-in
 // across the artwork. Used only for demo media until real product films exist.
-// Run: swift tools/make_demo_video.swift <input image> <output.mp4> <poster.jpg> [seconds]
+// Run: swift scripts/make_demo_video.swift <input image> <output.mp4> <poster.jpg> [seconds]
 import AVFoundation
 import AppKit
 import CoreGraphics

@@ -1,13 +1,13 @@
 # Only hand-written source is formatted. Generated, archived and third-party files are left alone.
 node_modules/
 legacy_assets/
-site/data/
-site/assets/
-site/scripts/config.js
-site/RADAR-Gallery-to-Archive.html
+public/data/
+public/assets/
+public/js/core/config.js
+public/RADAR-Gallery-to-Archive.html
 package-lock.json
 
-# HTML is formatted by hand for now: tools/export.py matches the exact <link>/<script> tags in index.html.
+# HTML is formatted by hand for now: scripts/export.py matches the exact <link>/<script> tags in index.html.
 *.html
 
 # Prose docs keep their own line wrapping.

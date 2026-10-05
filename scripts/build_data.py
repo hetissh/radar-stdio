@@ -1,6 +1,6 @@
 """Split the catalogue source into the small files each page loads.
 
-Run: python3 tools/build_data.py   (after editing data/products.json)
+Run: python3 scripts/build_data.py   (after editing data/products.json)
 
 Source of truth: data/products.json  { collections: [...], products: [...] }
 Generated (do not edit by hand):
@@ -15,12 +15,12 @@ Summaries leave out the long text (description, status); only piece files carry 
 from pathlib import Path
 import json
 
-RAIL_LIMIT = 12  # keep in step with RAIL_LIMIT in site/scripts/home-collections.js
+RAIL_LIMIT = 12  # keep in step with RAIL_LIMIT in public/js/home/home-collections.js
 DETAIL_ONLY = ('description', 'status', 'media')
 MAX_MEDIA = 8
 MAX_VIDEO_MB = 8
 
-root = Path(__file__).resolve().parent.parent / 'site'  # the published site folder
+root = Path(__file__).resolve().parent.parent / 'public'  # the published site
 data = root / 'data'
 source = json.loads((data / 'products.json').read_text())
 collections, products = source['collections'], source['products']

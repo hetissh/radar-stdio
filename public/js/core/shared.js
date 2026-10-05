@@ -2,7 +2,7 @@
 //
 // Loaded as a classic <script> before each page's own script, so every top-level name here is a global that
 // the pages use (esc, art, money, radarData, productCard, bag, tones…). Rename one only together with its users.
-// tools/export.py inlines this file and finds it by the first line above: keep that line unchanged.
+// scripts/export.py inlines this file and finds it by the first line above: keep that line unchanged.
 //
 // Security: every catalogue value placed into HTML goes through esc(). Data comes from Shopify (merchant-entered)
 // and the bag from localStorage, so neither may ever be treated as markup.
@@ -113,10 +113,10 @@ if (radarPerf && window.PerformanceObserver && PerformanceObserver.supportedEntr
 }
 
 // ---------- Artwork ----------
-// Supplied artwork uses thumbnails from tools/build_images.py: AVIF where supported, JPEG otherwise, 320 or
+// Supplied artwork uses thumbnails from scripts/build_images.py: AVIF where supported, JPEG otherwise, 320 or
 // 640px wide by display size; the originals stay in assets/. A piece created in the Shopify admin has a
 // cdn.shopify.com URL instead: the CDN resizes it by ?width= and picks AVIF or WebP itself, so it needs no
-// <source> (see tools/sync_shopify.py).
+// <source> (see scripts/sync_shopify.py).
 
 const remoteArt = src => /^https:\/\/cdn\.shopify\.com\//.test(src);
 const cdnWidth = (url, width) => {
@@ -135,7 +135,7 @@ function art(piece, { sizes = '160px', className = '', eager = piece.id === '01'
     ` alt="${esc(piece.title)}"` +
     (className ? ` class="${className}"` : '') +
     ` loading="${eager ? 'eager' : 'lazy'}" decoding="async"`;
-  // The portable export inlines one JPEG per image instead (see tools/export.py).
+  // The portable export inlines one JPEG per image instead (see scripts/export.py).
   if (typeof assetUrls !== 'undefined') return `<img src="${assetUrls[piece.image]}"${attrs}>`;
   const srcset = ext => `${thumb(piece, 320, ext)} 320w, ${thumb(piece, 640, ext)} 640w`;
   if (remoteArt(piece.image)) {
@@ -171,7 +171,7 @@ function freeBearing(taken) {
 }
 
 // ---------- Catalogue data ----------
-// The catalogue lives in data/ (generated from data/products.json by tools/build_data.py), and each page loads
+// The catalogue lives in data/ (generated from data/products.json by scripts/build_data.py), and each page loads
 // only what it needs: radarData.home() the homepage file, radarData.all() every summary (catalogue),
 // radarData.piece(id) one piece in full plus its collection (product page). Until a loader resolves,
 // collectionData and products are empty; page scripts start from the loader's promise.

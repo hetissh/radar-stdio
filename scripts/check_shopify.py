@@ -1,6 +1,6 @@
 """Check that the Shopify keys in .env (or the environment) work. Prints results only, never key values.
 
-Run: python3 tools/check_shopify.py
+Run: python3 scripts/check_shopify.py
 
 Storefront API: queries the shop with the public token, then with the private token, and checks that Shopify
 serves the pinned API version. Admin API (only if SHOPIFY_CLIENT_ID and SHOPIFY_CLIENT_SECRET are set): exchanges

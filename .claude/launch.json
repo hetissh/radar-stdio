@@ -4,13 +4,13 @@
     {
       "name": "site",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8417", "--directory", "site"],
+      "runtimeArgs": ["-m", "http.server", "8417", "--directory", "public"],
       "port": 8417
     },
     {
       "name": "site-any-port",
       "runtimeExecutable": "sh",
-      "runtimeArgs": ["-c", "exec python3 -m http.server \"$PORT\" --directory site"],
+      "runtimeArgs": ["-c", "exec python3 -m http.server \"$PORT\" --directory public"],
       "port": 8418,
       "autoPort": true
     }

@@ -1,10 +1,10 @@
-"""Import the catalogue (site/data/products.json) into the Shopify store, then check it round-trips.
+"""Import the catalogue (public/data/products.json) into the Shopify store, then check it round-trips.
 
 Run:
-  python3 tools/shopify_import.py              create or update everything, then run the check
-  python3 tools/shopify_import.py --only 21,32 just these pieces (collections and definitions are always synced)
-  python3 tools/shopify_import.py --check      read the store back and compare with products.json; writes nothing
-  python3 tools/shopify_import.py --reset-stock  also overwrite stock on existing products with the test levels
+  python3 scripts/shopify_import.py              create or update everything, then run the check
+  python3 scripts/shopify_import.py --only 21,32 just these pieces (collections and definitions are always synced)
+  python3 scripts/shopify_import.py --check      read the store back and compare with products.json; writes nothing
+  python3 scripts/shopify_import.py --reset-stock  also overwrite stock on existing products with the test levels
 
 Re-runnable: products are matched on the metafield radar.id (the site's id), collections on their handle, so a run
 updates in place and never duplicates. Stock is only set when a product is created (or with --reset-stock), so a
@@ -28,7 +28,7 @@ import json
 import re
 import sys
 
-ROOT = Path(__file__).resolve().parent.parent / 'site'
+ROOT = Path(__file__).resolve().parent.parent / 'public'
 SIZES = ('XS', 'S', 'M', 'L', 'XL')
 CURRENCY = 'INR'
 VENDOR = 'RADAR STUDIO'

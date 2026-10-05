@@ -6,7 +6,7 @@
 // Classic script (see shared.js): defines the global `homeCollections`. Uses shared.js and radar.js.
 // home.js inserts homeCollections.markup() into the page, then calls homeCollections.mount().
 const homeCollections = (() => {
-  const RAIL_LIMIT = 12; // featured pieces per rail; keep in step with RAIL_LIMIT in tools/build_data.py
+  const RAIL_LIMIT = 12; // featured pieces per rail; keep in step with RAIL_LIMIT in scripts/build_data.py
   const ECHO_MS = 1800; // how long a "+" lingers where the focused card used to be
   const DRAG_THRESHOLD = 6; // px a mouse must move before a press becomes a drag
 

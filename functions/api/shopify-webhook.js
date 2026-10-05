@@ -1,6 +1,6 @@
 // Cloudflare Pages Function: POST /api/shopify-webhook
-// Shopify calls this when a product or collection changes (subscriptions: tools/shopify_webhooks.py). It checks the
-// signature, then triggers a Pages rebuild, whose first step (tools/sync_shopify.py) reads the store again.
+// Shopify calls this when a product or collection changes (subscriptions: scripts/shopify_webhooks.py). It checks the
+// signature, then triggers a Pages rebuild, whose first step (scripts/sync_shopify.py) reads the store again.
 //
 // Environment (Cloudflare → Settings → Variables and Secrets, all Secret):
 //   SHOPIFY_CLIENT_SECRET   the Dev Dashboard app's secret; Shopify signs webhooks with it

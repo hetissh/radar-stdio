@@ -19,7 +19,7 @@ const productMedia = (() => {
   const SWIPE_MAX_Y = 50; // px of vertical travel beyond which it is a scroll, not a swipe
 
   const mediaList = piece => (piece.media && piece.media.length ? piece.media : DEFAULT_MEDIA);
-  // Thumbnails from tools/build_images.py: the path with / as --, then -<width>.<ext>.
+  // Thumbnails from scripts/build_images.py: the path with / as --, then -<width>.<ext>.
   const mediaThumb = (src, width, ext) =>
     'assets/thumbs/' + src.replace(/\.[a-z0-9]+$/i, '').replace(/\//g, '--') + '-' + width + '.' + ext;
   const mediaSrcset = (src, ext) => `${mediaThumb(src, 640, ext)} 640w, ${mediaThumb(src, 1280, ext)} 1280w`;

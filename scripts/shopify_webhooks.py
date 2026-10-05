@@ -1,9 +1,9 @@
 """Subscribe the store's catalogue webhooks to the site's rebuild function (functions/api/shopify-webhook.js).
 
 Run:
-  python3 tools/shopify_webhooks.py https://<project>.pages.dev   subscribe (re-runnable; moves existing ones to this URL)
-  python3 tools/shopify_webhooks.py --list                        show this app's subscriptions
-  python3 tools/shopify_webhooks.py --remove                      remove this app's catalogue subscriptions
+  python3 scripts/shopify_webhooks.py https://<project>.pages.dev   subscribe (re-runnable; moves existing ones to this URL)
+  python3 scripts/shopify_webhooks.py --list                        show this app's subscriptions
+  python3 scripts/shopify_webhooks.py --remove                      remove this app's catalogue subscriptions
 
 Subscriptions belong to the Dev Dashboard app in .env, so Shopify signs them with its client secret, the same
 SHOPIFY_CLIENT_SECRET the function checks. Payloads are trimmed to the id: the function only needs the signature.
