@@ -14,6 +14,7 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => HTML_ESCAPES[
 // Like esc(), but keeps intended line breaks.
 const escLines = value => esc(value).replace(/\n/g, '<br>');
 const pad = (n, size = 2) => String(n).padStart(size, '0');
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const money = n => '₹' + n.toLocaleString('en-IN');
 
 // ---------- Browser storage ----------

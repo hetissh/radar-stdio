@@ -39,14 +39,16 @@ New files go in the folder above that matches their role; never in the repo root
   - documents at the top what it defines, what it depends on, and its load order;
   - receives what it needs from its caller explicitly (a `mount({ ... })`-style options object), documented with one line per option, instead of reaching into another file's variables.
 - `shared.js` is the exception: its top-level names (`esc`, `pad`, `art`, `money`, `radarData`, `bag`, `tones`…) are deliberate globals used by every page. Rename one only together with every user.
-- Load order in each page: `shared.js` → shared modules (`radar.js`) → page modules (`catalogue-field.js`) → the page script (`catalogue.js`).
+- Load order in each page: `shared.js` → shared modules (`radar.js`) → page modules (`catalogue-field.js`; `product-lock.js`, `product-media.js`, `product-sizes.js`) → the page script (`catalogue.js`, `product.js`).
+- A page module that owns a piece of the page's HTML exposes `markup(...)` (returning that HTML) alongside `mount(...)`; the page script assembles the layout from those parts, then mounts each module.
+- Naming: page modules are `<page>-<feature>.js` and define `<page><Feature>` (`product-media.js` → `productMedia`).
 - Page scripts wrap their code in an `(async () => { ... })()` so their names stay local.
 - Before adding a global, search `site/` for the name: two classic scripts declaring the same top-level `const` stop the page loading.
 - Adding a script to a page means adding its `<script>` tag (with the current `?v=`), and to `tools/export.py` if the homepage uses it.
 
 ## 4. Code style
 
-- **DRY:** a helper used in more than one file lives in `shared.js` (or a shared module). Current shared helpers include `pad`, `esc`, `escLines`, `money`, `priceHtml`, `colourOf`, `productUrl`, `productById`, `localStore`, `sessionStore`, `getOptionalData`.
+- **DRY:** a helper used in more than one file lives in `shared.js` (or a shared module). Current shared helpers include `pad`, `clamp`, `esc`, `escLines`, `money`, `priceHtml`, `colourOf`, `productUrl`, `productById`, `localStore`, `sessionStore`, `getOptionalData`; radar drawing helpers are on `radar` (`size`, `lag`, `gridGlyph`, `sweepGlyph`, `ringDots`, `ringSvg`, `fade`, `drawBase`, `loop`).
 - **Names:** `camelCase` for variables and functions; `UPPER_SNAKE_CASE` for fixed values (`GRID_BATCH`, `STORAGE_KEYS`); names describe the thing (`modeLabel`, not `fieldHead`; `brightness`, not `b`). Single letters only for tiny scopes (`p` for a piece in a one-line callback, loop indices).
 - **No magic numbers:** a tuning value used in logic gets a named constant with a comment saying what it controls and in what unit.
 - **Small functions:** a function does one thing; long render functions are split (e.g. `renderControls`, `renderRingButtons`).

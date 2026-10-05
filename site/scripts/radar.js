@@ -49,6 +49,23 @@ const radar = (() => {
     }
   }
 
+  // The same dotted circle as an SVG (for buttons and overlays): `steps` dots, or one per 3 units by default.
+  function ringSvg(d, steps) {
+    const r = d / 2 - 0.5;
+    const dots = steps || Math.round((TAU * r) / 3);
+    return (
+      `<svg viewBox="0 0 ${d} ${d}" aria-hidden="true">` +
+      `<circle cx="${d / 2}" cy="${d / 2}" r="${r}" pathLength="${dots}"/></svg>`
+    );
+  }
+
+  // How visible a mark is at `distance` from foreground content (1 = the content's edge ellipse): marks fade
+  // smoothly from full strength down to 8% underneath it, so the radar never competes with the garment.
+  function fade(distance) {
+    const edge = clamp((distance - 0.5) / 0.7, 0, 1);
+    return 0.08 + 0.92 * edge * edge * (3 - 2 * edge);
+  }
+
   // Copy the cached static layer onto the visible canvas, replacing the last frame.
   function drawBase(ctx, base, width, height) {
     ctx.clearRect(0, 0, width, height);
@@ -79,5 +96,5 @@ const radar = (() => {
     };
   }
 
-  return { TAU, FRAME_MS, size, lag, gridGlyph, sweepGlyph, ringDots, drawBase, loop };
+  return { TAU, FRAME_MS, size, lag, gridGlyph, sweepGlyph, ringDots, ringSvg, fade, drawBase, loop };
 })();
