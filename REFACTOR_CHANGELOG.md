@@ -47,8 +47,10 @@ path, to where it lives now.
 | screenshots, mockups, 9 unused images | `legacy_assets/` | `legacy_assets/` (`mockups/`, `previews/`, `unused-references/`) |
 
 New at the root: `README.md`, `AI_CODING_RULES.md`, this file, `package.json`
-(Prettier, ESLint and the npm commands), `pyproject.toml` (ruff, mypy),
-`eslint.config.mjs`, `.prettierrc.json`, `.prettierignore` and `tests/`.
+(Prettier, ESLint, TypeScript and the npm commands), `pyproject.toml` (ruff,
+mypy), `eslint.config.mjs`, `tsconfig.json`, `.prettierrc.json`,
+`.prettierignore`, `types/` and `tests/`. The type check (below) added
+`public/js/core/dom.js`.
 
 ## Phase 1: organise the folders
 
@@ -151,6 +153,36 @@ change. It covers:
 `npm run check` enforces what can be enforced: Prettier, ESLint, ruff, mypy
 and both test suites.
 
+## Type checking
+
+The JavaScript stays plain JavaScript, served exactly as written, but
+TypeScript's compiler now checks it (`tsc` in `npm run lint`, strict mode,
+nothing compiled). Converting the files to `.ts` was ruled out: browsers
+can't run `.ts`, and the site depends on having no build step (pages open
+from disk, and `export.py` inlines the source).
+- **Setup:**
+  - `tsconfig.json` checks `public/js/` and `functions/`.
+  - `types/browser.d.ts` declares the two globals the scripts read but don't
+    define.
+  - TypeScript 6.0 is pinned for Node 18.
+  - ESLint's JSDoc rules now expect TypeScript's dialect: `object`,
+    `Record<…>`, function types with a return type.
+- **First run:** 542 errors. About 220 were element lookups that could
+  return null, and 126 were properties missing from a declared type.
+- **The fixes:**
+  - `core/dom.js` adds typed lookups. `element()` fails straight away,
+    naming the selector, if the markup is missing an element; before, the
+    page failed at that element's first use. It also adds `elements()`,
+    `closestTarget()` and `targetElement()`.
+  - `radar.context2d()` returns a canvas's 2D context.
+  - Typedefs replace loose `Object` types: radar cells and points, ring
+    bands, ping targets, foreground zones and `PieceRecord`.
+  - `MediaItem` became a union of `GarmentView`, `ImageView` and
+    `VideoView`, matching what `build_data.py` already checks.
+  - Real loose ends were tightened: `hidden` can be the string
+    `'until-found'`, and a deployment may have no stage.
+- **Not type-checked:** the tests. ESLint still checks their JSDoc.
+
 ## Intentional behaviour changes
 
 - A bag changed in another tab is validated like the bag on load
@@ -164,7 +196,11 @@ and both test suites.
 - An invalid catalogue makes `build_data.py` exit with
   `build_data: <message>` instead of an assert traceback. The checks, their
   order and their messages are unchanged.
-- Asset versions were bumped with each change. They are now `?v=2026-10-05i`
+- A missing element now fails with `Missing element: <selector>`, where the
+  page used to fail later with a null-property error. The art-detail lens
+  ignores input before the page has given it a view, where it used to
+  throw (type checking).
+- Asset versions were bumped with each change. They are now `?v=2026-10-05j`
   on every page.
 
 ## Verification
@@ -179,6 +215,17 @@ compared old against old.
 - **CSS:** the computed style of every element and pseudo-element on all
   three pages, in 39 states, at widths 1280, 950, 820, 720 and 390, in both
   themes.
+- **Type checking:** old and new matched across 33 scenarios on the three
+  pages:
+  - every view, filter, search and keyboard path
+  - field zoom
+  - media, lens and sizes
+  - the bag
+  - stress mode and mobile width
+  - returning from a product page
+
+  Two differences appeared once each, and both were sweep or animation
+  timing: the re-runs matched exactly.
 - **Python:**
   - generated data, `config.js`, the portable export and the thumbnails are
     byte-identical

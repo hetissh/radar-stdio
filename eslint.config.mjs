@@ -97,7 +97,8 @@ const jsdocRules = {
   'jsdoc/require-param-description': 'off',
   'jsdoc/require-returns-description': 'off',
   'jsdoc/require-property-description': 'off',
-  // Types like Piece are defined once (shared.js) and used across files.
+  // Types like Piece are defined once (core/data.js) and used across files;
+  // tsc checks that every type exists.
   'jsdoc/no-undefined-types': 'off',
   'jsdoc/tag-lines': 'off',
 };
@@ -118,12 +119,16 @@ export default [
   js.configs.recommended,
   {
     plugins: { jsdoc },
-    // Google style uses Closure Compiler's JSDoc dialect.
+    // JSDoc types are TypeScript's dialect, checked by `tsc` (tsconfig.json);
+    // tag names follow Google style.
     settings: {
       jsdoc: {
-        mode: 'closure',
-        tagNamePreference: { file: 'fileoverview', constant: 'const' },
-        preferredTypes: { object: 'Object' },
+        mode: 'typescript',
+        tagNamePreference: {
+          file: 'fileoverview',
+          constant: 'const',
+          returns: 'return',
+        },
       },
     },
   },

@@ -9,7 +9,7 @@
 
 /**
  * Keys of everything the site keeps in browser storage.
- * @const {!Object<string, string>}
+ * @const {!Record<string, string>}
  */
 const STORAGE_KEYS = Object.freeze({
   bag: 'radar-bag',
@@ -23,7 +23,7 @@ const STORAGE_KEYS = Object.freeze({
 const { localStore, sessionStore } = (() => {
   /**
    * Wraps a storage area so that none of its methods can throw.
-   * @param {string} area 'localStorage' or 'sessionStorage'.
+   * @param {'localStorage'|'sessionStorage'} area
    * @return {{
    *   get: function(string): ?string,
    *   set: function(string, *): void,

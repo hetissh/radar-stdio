@@ -29,7 +29,7 @@ const SOURCE = path.join(
  * The function module. The repo's package.json doesn't declare ES modules
  * (the site uses classic scripts), so the file is imported as an ES module
  * from its source text rather than by path.
- * @return {!Promise<!Object>}
+ * @return {!Promise<!object>}
  */
 function loadWebhook() {
   const source = fs.readFileSync(SOURCE, 'utf8');
@@ -55,8 +55,8 @@ function shopifyRequest({ topic, body = '{"id":1}', signature }) {
 
 /**
  * A fake fetch that records calls and answers from a table.
- * @param {!Object<string, !Response>} answers By URL prefix.
- * @return {{fetch: function(string, !Object): !Promise<!Response>,
+ * @param {!Record<string, !Response>} answers By URL prefix.
+ * @return {{fetch: function(string, !object): !Promise<!Response>,
  *     calls: !Array<string>}}
  */
 function fakeNetwork(answers) {

@@ -7,8 +7,18 @@
  */
 
 /* exported stressCount, radarPerf, addStressPieces, showStressBadge */
-/* global clamp, STORAGE_KEYS, sessionStore */
+/* global clamp, element, STORAGE_KEYS, sessionStore */
 /* global collectionData, products, freeBearing */
+
+/**
+ * One named timing statistic, in milliseconds.
+ * @typedef {{count: number, total: number, max: number, last: number}} PerfStat
+ */
+
+/**
+ * What radarPerf.report() prints: one row of numbers per statistic.
+ * @typedef {!Record<string, !Record<string, number>>} PerfRows
+ */
 
 const { stressCount, radarPerf, addStressPieces, showStressBadge } = (() => {
   const STRESS_MAX = 5000;
@@ -46,7 +56,8 @@ const { stressCount, radarPerf, addStressPieces, showStressBadge } = (() => {
 
   /**
    * Collects timings while ?stress or ?perf is on.
-   * @return {?{record: function(string, number), report: function(): !Object}}
+   * @return {?{record: function(string, number): void,
+   *     report: function(): !PerfRows}}
    */
   function createPerf() {
     const enabled =
@@ -54,7 +65,7 @@ const { stressCount, radarPerf, addStressPieces, showStressBadge } = (() => {
       (stressCount || new URLSearchParams(location.search).has('perf'));
     if (!enabled) return null;
     const perf = {
-      /** @type {!Object<string, !Object>} Raw statistics, by name. */
+      /** @type {!Record<string, !PerfStat>} Raw statistics, by name. */
       stats: {},
 
       /**
@@ -73,9 +84,10 @@ const { stressCount, radarPerf, addStressPieces, showStressBadge } = (() => {
 
       /**
        * Prints every statistic, the page's size and its image traffic.
-       * @return {!Object} The rows printed.
+       * @return {!PerfRows} The rows printed.
        */
       report() {
+        /** @type {!PerfRows} */
         const rows = {};
         for (const [name, stat] of Object.entries(this.stats)) {
           rows[name] = {
@@ -84,9 +96,10 @@ const { stressCount, radarPerf, addStressPieces, showStressBadge } = (() => {
             maxMs: +stat.max.toFixed(2),
           };
         }
-        const images = performance
-          .getEntriesByType('resource')
-          .filter(entry => entry.initiatorType === 'img');
+        const resources = /** @type {!Array<!PerformanceResourceTiming>} */ (
+          performance.getEntriesByType('resource')
+        );
+        const images = resources.filter(entry => entry.initiatorType === 'img');
         const imageBytes = images.reduce(
           (total, entry) =>
             total + (entry.transferSize || entry.encodedBodySize || 0),
@@ -169,14 +182,12 @@ const { stressCount, radarPerf, addStressPieces, showStressBadge } = (() => {
         `Stress test · ${total.toLocaleString('en-IN')} pieces ` +
         '<button type="button">Exit</button></div>',
     );
-    document
-      .querySelector('.stress-badge button')
-      .addEventListener('click', () => {
-        sessionStore.remove(STORAGE_KEYS.stress);
-        const query = new URLSearchParams(location.search);
-        query.delete('stress');
-        location.search = query.toString();
-      });
+    element(document, '.stress-badge button').addEventListener('click', () => {
+      sessionStore.remove(STORAGE_KEYS.stress);
+      const query = new URLSearchParams(location.search);
+      query.delete('stress');
+      location.search = query.toString();
+    });
   }
 
   return {

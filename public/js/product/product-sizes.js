@@ -5,7 +5,7 @@
  */
 
 /* exported productSizes */
-/* global esc, clamp, radar, bag */
+/* global esc, clamp, element, elements, radar, bag */
 
 const productSizes = (() => {
   // [size, chest in cm]. The readings are illustrative.
@@ -63,10 +63,10 @@ const productSizes = (() => {
    * @param {{root: !Element, piece: !Piece}} options root contains markup().
    */
   function mount({ root, piece }) {
-    const rings = [...root.querySelectorAll('.size-ring')];
-    const sizeValue = root.querySelector('.size-value');
-    const add = root.querySelector('.piece-add');
-    const status = root.querySelector('#bag-status');
+    const rings = elements(root, '.size-ring');
+    const sizeValue = element(root, '.size-value');
+    const add = /** @type {!HTMLButtonElement} */ (element(root, '.piece-add'));
+    const status = element(root, '#bag-status');
     let chosen = '';
     let addedTimer = 0;
 
@@ -75,7 +75,7 @@ const productSizes = (() => {
      * @param {!HTMLElement} ring
      */
     function choose(ring) {
-      chosen = ring.dataset.size;
+      chosen = ring.dataset.size ?? '';
       for (const other of rings) {
         const on = other === ring;
         other.setAttribute('aria-checked', String(on));
@@ -94,10 +94,11 @@ const productSizes = (() => {
      * @param {number} index The ring the key was pressed on.
      */
     function onRingKey(event, index) {
-      const step = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1 }[
-        event.key
-      ];
+      /** @type {!Record<string, number>} */
+      const steps = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1 };
+      const step = steps[event.key];
       const last = rings.length - 1;
+      /** @type {?HTMLElement} */
       let target = null;
       if (step) {
         target = rings[clamp(index + step, 0, last)];
@@ -118,11 +119,11 @@ const productSizes = (() => {
       bag.add(piece, chosen);
       status.textContent = `${piece.name}, size ${chosen}, added to the concept bag.`;
       add.innerHTML = buttonContent(`Added / ${chosen}`, '✓');
-      document.querySelectorAll('.bag-open').forEach(button => {
+      for (const button of elements(document, '.bag-open')) {
         button.classList.remove('pinged');
         void button.offsetWidth; // restart the CSS animation
         button.classList.add('pinged');
-      });
+      }
       clearTimeout(addedTimer);
       addedTimer = setTimeout(() => {
         add.innerHTML = buttonContent(`Add another / ${chosen}`, '↗');
@@ -134,13 +135,11 @@ const productSizes = (() => {
       ring.addEventListener('keydown', event => onRingKey(event, index));
     });
     add.addEventListener('click', addToBag);
-    document
-      .querySelectorAll('.bag-open')
-      .forEach(button =>
-        button.addEventListener('animationend', () =>
-          button.classList.remove('pinged'),
-        ),
+    for (const button of elements(document, '.bag-open')) {
+      button.addEventListener('animationend', () =>
+        button.classList.remove('pinged'),
       );
+    }
   }
 
   return { markup, mount };

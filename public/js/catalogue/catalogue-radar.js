@@ -9,7 +9,33 @@
  */
 
 /* exported catalogueRadar */
-/* global pad, radar, tones, products, collectionData, radarPerf */
+/* global pad, targetElement, element, radar, tones, products */
+/* global collectionData, radarPerf */
+
+/**
+ * One glyph cell of the field's grid.
+ * @typedef {object} FieldCell
+ * @property {number} x
+ * @property {number} y
+ * @property {number} theta Angle from the centre, in radians.
+ * @property {string} glyph The static grid mark, or ''.
+ * @property {boolean} axis On the centre row or column.
+ * @property {number} echo Afterglow, 0 to 1.
+ */
+
+/**
+ * A plotted piece and its blip.
+ * @typedef {{piece: !Piece, element: !HTMLElement}} FieldBlip
+ */
+
+/**
+ * A blip the sweep pings, at its bearing.
+ * @typedef {object} PingTarget
+ * @property {!Piece} piece
+ * @property {!HTMLElement} element
+ * @property {number} angle The bearing, in canvas radians.
+ * @property {number} lag How far it trailed the sweep last frame.
+ */
 
 const catalogueRadar = (() => {
   // Radians of afterglow behind the sweep line.
@@ -27,8 +53,8 @@ const catalogueRadar = (() => {
    *   layout: !FieldLayout,
    *   isActive: function(): boolean,
    *   isHidden: function(): boolean,
-   *   onFirstSize: function(),
-   *   onPing: function(!Piece, number),
+   *   onFirstSize: function(): void,
+   *   onPing: function(!Piece, number): void,
    * }} options stage holds the .field-canvas; motion is the
    *     prefers-reduced-motion query (a still radar); layout is read on
    *     every paint; isActive says whether the field view is chosen, and
@@ -36,22 +62,26 @@ const catalogueRadar = (() => {
    *     radar first has a size (ring capacity depends on it); onPing(piece,
    *     now) runs when the sweep pings a blip.
    * @return {{
-   *   repaint: function(),
-   *   sync: function(),
-   *   setTargets: function(!Array<{piece: !Piece, element: !HTMLElement}>),
+   *   repaint: function(): void,
+   *   sync: function(): void,
+   *   setTargets: function(!Array<!FieldBlip>): void,
    *   halfWidth: function(): number,
    * }}
    */
   function mount(options) {
     const { stage, motion, layout, isActive, isHidden } = options;
     const { onFirstSize, onPing } = options;
-    const canvas = stage.querySelector('.field-canvas');
-    const ctx = canvas.getContext('2d');
+    const canvas = /** @type {!HTMLCanvasElement} */ (
+      element(stage, '.field-canvas')
+    );
+    const ctx = radar.context2d(canvas);
     const base = document.createElement('canvas');
-    const baseCtx = base.getContext('2d');
+    const baseCtx = radar.context2d(base);
     let size = 0;
     let half = 0;
+    /** @type {!Array<!FieldCell>} */
     let cells = [];
+    /** @type {!Array<!PingTarget>} */
     let targets = [];
     let angle = -Math.PI / 2 + 0.6;
     let lastPaint = 0;
@@ -77,12 +107,13 @@ const catalogueRadar = (() => {
      * The glyph grid inside the radar's rim.
      * @param {number} cellWidth Pixels.
      * @param {number} cellHeight Pixels.
-     * @return {!Array<!Object>}
+     * @return {!Array<!FieldCell>}
      */
     function layoutCells(cellWidth, cellHeight) {
       const limit = half * RIM;
       const cols = Math.floor(limit / cellWidth);
       const rows = Math.floor(limit / cellHeight);
+      /** @type {!Array<!FieldCell>} */
       const result = [];
       for (let col = -cols; col <= cols; col++) {
         for (let row = -rows; row <= rows; row++) {
@@ -122,7 +153,7 @@ const catalogueRadar = (() => {
      * A point on the bearing scale.
      * @param {number} degrees
      * @param {number} fraction Distance from the centre, of the half-width.
-     * @return {!Array<number>} [x, y] in pixels.
+     * @return {[number, number]} [x, y] in pixels.
      */
     function scalePoint(degrees, fraction) {
       const a = -Math.PI / 2 + (degrees * Math.PI) / 180;
@@ -236,7 +267,7 @@ const catalogueRadar = (() => {
 
     /**
      * Restarts a blip's ping animation and reports the ping.
-     * @param {{piece: !Piece, element: !HTMLElement}} target
+     * @param {!PingTarget} target
      * @param {number} now
      */
     function ping(target, now) {
@@ -256,7 +287,7 @@ const catalogueRadar = (() => {
 
     /**
      * Sets the blips the sweep pings: each at its bearing.
-     * @param {!Array<{piece: !Piece, element: !HTMLElement}>} blips
+     * @param {!Array<!FieldBlip>} blips
      */
     function setTargets(blips) {
       targets = blips.map(({ piece, element }) => {
@@ -289,9 +320,8 @@ const catalogueRadar = (() => {
     }
 
     stage.addEventListener('animationend', event => {
-      if (event.target.classList.contains('blip')) {
-        event.target.classList.remove('ping');
-      }
+      const target = targetElement(event);
+      if (target.classList.contains('blip')) target.classList.remove('ping');
     });
     new ResizeObserver(resize).observe(stage);
     new IntersectionObserver(([entry]) => {

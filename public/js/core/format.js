@@ -4,13 +4,12 @@
  * Security: every catalogue value placed into HTML goes through esc(). Data
  * comes from Shopify (entered by merchants) and the bag from localStorage, so
  * neither may ever be treated as markup.
- *
- * This is the first script on every page; tools/export.py relies on that.
  */
 
 /* exported esc, escLines, pad, clamp, money */
 
 const { esc, escLines, pad, clamp, money } = (() => {
+  /** @type {Record<string, string>} */
   const HTML_ENTITIES = {
     '&': '&amp;',
     '<': '&lt;',

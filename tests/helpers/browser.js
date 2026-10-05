@@ -17,7 +17,7 @@ const PUBLIC = path.join(__dirname, '..', '..', 'public');
  * A stand-in DOM element: every property is another stand-in, every call
  * succeeds, and assigned values are kept.
  * @param {string} name For debugging.
- * @return {!Object}
+ * @return {!object}
  */
 function fakeElement(name) {
   const target = function () {};
@@ -31,7 +31,7 @@ function fakeElement(name) {
   };
   return new Proxy(target, {
     /**
-     * @param {!Object} object
+     * @param {!object} object
      * @param {string|symbol} key
      * @return {*} A kept value, a query helper, or another stand-in.
      */
@@ -43,7 +43,7 @@ function fakeElement(name) {
       return fakeElement(`${name}.${String(key)}`);
     },
     /**
-     * @param {!Object} object
+     * @param {!object} object
      * @param {string|symbol} key
      * @param {*} value
      * @return {boolean}
@@ -59,7 +59,7 @@ function fakeElement(name) {
  * A working Storage, optionally one that throws on every call (as browsers
  * do when storage is blocked).
  * @param {boolean=} broken
- * @return {!Object}
+ * @return {!object}
  */
 function fakeStorage(broken = false) {
   const data = new Map();
@@ -76,7 +76,7 @@ function fakeStorage(broken = false) {
 /**
  * A fetch() that serves files from public/, or 404.
  * @param {string} url Relative to the site root.
- * @return {!Promise<!Object>}
+ * @return {!Promise<!object>}
  */
 async function fakeFetch(url) {
   const file = path.join(PUBLIC, url);
@@ -120,6 +120,7 @@ function loadScripts(scripts, options = {}) {
 /** Every core script, in page order. */
 const CORE = [
   'core/format.js',
+  'core/dom.js',
   'core/storage.js',
   'core/dev-tools.js',
   'core/data.js',

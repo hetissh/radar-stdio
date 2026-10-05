@@ -9,18 +9,19 @@
 /* global esc, pad, money, reduced, colourOf, art, productUrl, productCard */
 /* global productById, bearingLabel, collectionData, products, radarData */
 /* global radarPerf, showLoadError, STORAGE_KEYS, sessionStore */
-/* global productLock, productMedia, productSizes */
+/* global element, elements, productLock, productMedia, productSizes */
 
 (async () => {
   const buildStart = performance.now();
-  const main = document.querySelector('#piece');
+  const main = element(document, '#piece');
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const query = new URLSearchParams(location.search);
 
   // Loads this piece in full and its collection's summaries.
-  let piece;
+  /** @type {?Piece} */
+  let loaded;
   try {
-    piece = await radarData.piece(query.get('id') || '');
+    loaded = await radarData.piece(query.get('id') || '');
   } catch (error) {
     console.error(error);
     document.title = 'Signal interrupted — RADAR STUDIO';
@@ -29,7 +30,7 @@
   }
   radarPerf?.record('product data', performance.now() - buildStart);
 
-  if (!piece) {
+  if (!loaded) {
     document.title = 'Signal lost — RADAR STUDIO';
     main.innerHTML =
       '<section class="signal-lost"><span class="mono muted">No signal / 404' +
@@ -39,6 +40,7 @@
     return;
   }
 
+  const piece = loaded;
   // A large collection's orbit shows this piece and this many either side.
   const ORBIT_WINDOW = 5;
   // Pieces in the "More on this orbit" rail.
@@ -53,6 +55,10 @@
     .sort((a, b) => a.position - b.position);
   const count = siblings.length;
   const index = siblings.indexOf(piece);
+  /**
+   * @param {!Piece} sibling
+   * @return {number} Its place on the orbit, from 1.
+   */
   const rank = sibling => siblings.indexOf(sibling) + 1;
   /**
    * @param {number} offset Places along the orbit; negative is backwards.
@@ -86,7 +92,7 @@
   }
 
   document.title = `${piece.name} — RADAR STUDIO`;
-  const crumb = document.querySelector('.crumb');
+  const crumb = /** @type {!HTMLAnchorElement} */ (element(document, '.crumb'));
   if (fromCatalogue) {
     crumb.href = catalogueUrl();
     crumb.textContent = '← Catalogue';
@@ -142,12 +148,24 @@
     const slots = pieces.length;
     // Slot i's point on a 300-unit-radius arc spanning 50°; fractional slots
     // reach past the ends.
+    /**
+     * @param {number} slot
+     * @return {[number, number]} [x, y] in the arc's units.
+     */
     const point = slot => {
       const fraction = slots < 2 ? 0 : slot / (slots - 1) - 0.5;
       const angle = (fraction * 50 * Math.PI) / 180;
       return [150 + 300 * Math.sin(angle), 330 - 300 * Math.cos(angle)];
     };
+    /**
+     * @param {[number, number]} xy
+     * @return {string} The cx and cy attributes for a point.
+     */
     const centre = ([x, y]) => `cx="${x.toFixed(1)}" cy="${y.toFixed(1)}"`;
+    /**
+     * @param {number} slot
+     * @return {string} A "···" past one end of the arc.
+     */
     const ellipsis = slot => {
       const [x, y] = point(slot);
       return (
@@ -274,16 +292,21 @@
 
   main.innerHTML = `<div class="piece-hero">${stageHtml()}${infoHtml()}</div>${orbitNavHtml()}${moreHtml()}`;
   if (fromCatalogue) {
-    main.querySelectorAll('.more-rail .product-card').forEach(card => {
-      card.href = link(productById(card.dataset.product));
-    });
+    const cards = /** @type {!Array<!HTMLAnchorElement>} */ (
+      elements(main, '.more-rail .product-card')
+    );
+    for (const card of cards) {
+      // The rail's cards are this collection's loaded pieces.
+      const sibling = productById(card.dataset.product ?? '');
+      card.href = link(/** @type {!Piece} */ (sibling));
+    }
   }
 
-  const stage = main.querySelector('.piece-stage');
+  const stage = element(main, '.piece-stage');
   productLock.mount({
     stage,
-    centre: stage.querySelector('.tee-view'),
-    art: stage.querySelector('.tee-art'),
+    centre: element(stage, '.tee-view'),
+    art: /** @type {!HTMLImageElement} */ (element(stage, '.tee-art')),
     bearing: piece.bearing,
     number: pad(index + 1),
     motion,

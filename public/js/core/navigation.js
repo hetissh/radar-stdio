@@ -4,9 +4,11 @@
  * page's stage.
  */
 
+/* global element, elements, closestTarget */
+
 (() => {
-  const menu = document.querySelector('.menu-button');
-  const nav = document.querySelector('.nav');
+  const menu = element(document, '.menu-button');
+  const nav = element(document, '.nav');
 
   /** @param {boolean} open */
   function setMenuOpen(open) {
@@ -28,29 +30,31 @@
   // Name only the clicked garment, so it alone morphs into the next page's
   // stage.
   document.addEventListener('click', event => {
-    const card = event.target.closest('.product-card');
+    const card = closestTarget(event, '.product-card');
     if (!card || event.defaultPrevented) return;
-    document
-      .querySelectorAll('.tee-view, .product-card .concept-tee')
-      .forEach(element => {
-        element.style.viewTransitionName = 'none';
-      });
-    const tee = card.querySelector('.concept-tee');
+    for (const tee of elements(
+      document,
+      '.tee-view, .product-card .concept-tee',
+    )) {
+      tee.style.viewTransitionName = 'none';
+    }
+    const tee = /** @type {?HTMLElement} */ (
+      card.querySelector('.concept-tee')
+    );
     if (tee) tee.style.viewTransitionName = 'piece';
   });
   // Coming back (including from the back/forward cache) clears the names for
   // the next navigation.
-  addEventListener('pageshow', () =>
-    document
-      .querySelectorAll('.tee-view, .product-card .concept-tee, [data-morph]')
-      .forEach(element => {
-        element.style.viewTransitionName = '';
-      }),
-  );
+  addEventListener('pageshow', () => {
+    const named = '.tee-view, .product-card .concept-tee, [data-morph]';
+    for (const tee of elements(document, named)) {
+      tee.style.viewTransitionName = '';
+    }
+  });
   // A skipped page transition (hidden tab, rapid navigation) is harmless: its
   // rejected promises are deliberately ignored so they stay out of the error
   // console.
-  for (const type of ['pageswap', 'pagereveal']) {
+  for (const type of /** @type {const} */ (['pageswap', 'pagereveal'])) {
     addEventListener(type, event => {
       const transition = event.viewTransition;
       if (!transition) return;

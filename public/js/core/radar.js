@@ -21,10 +21,23 @@ const radar = (() => {
   const FRAME_MS = 33;
 
   /**
+   * A canvas's 2D drawing context. Every supported browser has one; this
+   * fails at once, rather than at the first drawing call, if not.
+   * @param {!HTMLCanvasElement} canvas
+   * @return {!CanvasRenderingContext2D}
+   * @throws {Error} If the canvas has no 2D context.
+   */
+  function context2d(canvas) {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas 2D drawing is unavailable');
+    return ctx;
+  }
+
+  /**
    * Sizes canvases for a box of CSS pixels and sets the text style every
    * radar draws with.
    * @param {!Array<!HTMLCanvasElement>} canvases
-   * @param {{width: number, height: number, font: (string|undefined)}} box
+   * @param {{width: number, height: number, font?: string}} box
    */
   function size(canvases, box) {
     const { width, height, font = '11px monospace' } = box;
@@ -32,7 +45,7 @@ const radar = (() => {
     for (const canvas of canvases) {
       canvas.width = Math.round(width * dpr);
       canvas.height = Math.round(height * dpr);
-      const ctx = canvas.getContext('2d');
+      const ctx = context2d(canvas);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.font = font;
       ctx.textAlign = 'center';
@@ -153,9 +166,9 @@ const radar = (() => {
   /**
    * A requestAnimationFrame loop that calls step(now) every frame while
    * canRun() is true.
-   * @param {function(number)} step
+   * @param {function(number): void} step
    * @param {function(): boolean} canRun
-   * @return {{stop: function(), sync: function(): boolean}} Call sync()
+   * @return {{stop: function(): void, sync: function(): boolean}} Call sync()
    *     whenever something canRun() depends on changes: it restarts the loop
    *     and returns true, or stops it and returns false.
    */
@@ -190,6 +203,7 @@ const radar = (() => {
   return {
     TAU,
     FRAME_MS,
+    context2d,
     size,
     lag,
     gridGlyph,

@@ -45,6 +45,7 @@ when it serves a real purpose).
 | `functions/` | Cloudflare Pages Functions (server-side, ES modules). The name and place are required by Cloudflare. |
 | `scripts/` | Developer and operational scripts (Python 3, standard library only). Run from the repo root: `python3 scripts/<name>.py`. |
 | `tests/` | Automated tests, mirroring the source: `tests/js/`, `tests/functions/`, `tests/py/`, shared helpers in `tests/helpers/`. |
+| `types/` | TypeScript declarations for globals the browser scripts read but don't define (`browser.d.ts`). Used by the type check only; never served. |
 | `docs/` | Notes, plans, provenance records. |
 | `legacy_assets/` | Unused files kept for reference. Nothing may reference them. |
 
@@ -74,7 +75,7 @@ when it serves a real purpose).
 |---|---|
 | `npm run check` | Runs all three below. |
 | `npm run format:check` | Prettier (JS, CSS, JSON) and `ruff format` (Python); `npm run format` fixes both. |
-| `npm run lint` | ESLint (`eslint.config.mjs`), `ruff check` and `mypy` (`pyproject.toml`). |
+| `npm run lint` | ESLint (`eslint.config.mjs`), the TypeScript type check (`tsc`, `tsconfig.json`), `ruff check` and `mypy` (`pyproject.toml`). |
 | `npm test` | JavaScript tests (Node's runner) and Python tests (`unittest`). |
 
 - **Prettier** (`.prettierrc.json`): 80-column lines, 2-space indent, single
@@ -82,8 +83,12 @@ when it serves a real purpose).
   and Markdown are not formatted by Prettier (see `.prettierignore`).
 - Prettier doesn't wrap comments: keep comment lines within 80 columns by
   hand.
-- Pinned for Node 18: ESLint 9.39 and eslint-plugin-jsdoc 50.8 (the last
-  releases that support it). Upgrade them together with Node.
+- **Type check:** `tsc` checks `public/js/` and `functions/` as plain
+  JavaScript (`checkJs`, `strict`), using the JSDoc types (§3). It compiles
+  nothing: the files served are the files written.
+- Pinned for Node 18: ESLint 9.39, eslint-plugin-jsdoc 50.8 and TypeScript
+  6.0 (TypeScript 7's launcher needs a newer Node). Upgrade them together
+  with Node.
 - Python tools: `python3 -m pip install ruff mypy` (versions in
   `pyproject.toml`).
 
@@ -109,16 +114,28 @@ when it serves a real purpose).
   - `UpperCamelCase`: types and typedefs (`Piece`, `HomeRail`)
   - camelCase is enforced **(lint)**.
 - **JSDoc** on every function declaration, method and top-level function
-  constant **(lint)**, in Closure syntax:
+  constant **(lint)**, with types in TypeScript's JSDoc dialect, which `tsc`
+  checks in strict mode **(lint)**:
   - types on every parameter and return **(lint)**: `{string}`,
-    `{!Array<!Piece>}` (`!` non-null), `{?Piece}` (`?` nullable),
-    `{number=}` (optional), `{function(number): boolean}`
+    `{!Array<!Piece>}`, `{?Piece}` (nullable), `{number=}` (optional
+    parameter), `{'grid'|'index'}`, `{[number, number]}`,
+    `{!Record<string, number>}` (a map), `{{sizes?: string}}` (an optional
+    property)
+  - function types always state their return: `{function(number): void}`
+  - an empty array or `null` that will hold something gets its type where it
+    is declared: `/** @type {?Piece} */ let piece = null;`
   - descriptions may be left out when the name and type say it all
-  - shared object shapes get an `@typedef` with `@property` lines; the core
-    ones (`Piece`, `Collection`, `MediaItem`, `CatalogueFile`) are in
-    `core/data.js`
+  - shared object shapes get an `@typedef {object}` with `@property` lines;
+    the core ones (`Piece`, `PieceRecord`, `Collection`, `MediaItem`,
+    `CatalogueFile`) are in `core/data.js`. A value that comes in kinds is
+    a union told apart by a field (`MediaItem` is `GarmentView`,
+    `ImageView` or `VideoView`, by `type`)
   - an options object is documented as one `{{…}}` type, with each option
     explained in the description
+  - a cast, `/** @type {!HTMLCanvasElement} */ (value)`, only where the code
+    guarantees something the checker can't see, with a comment saying why
+    when it isn't obvious. Never cast to silence a real possibility of
+    null: handle it.
 - No `eval`, `with` or primitive wrapper objects (`new String`) **(lint)**.
 
 ## 4. JavaScript: clean code
@@ -172,8 +189,8 @@ when it serves a real purpose).
   destructured declaration:
   `const { esc, pad, clamp } = (() => { … })();`.
 - **Load order on every page:**
-  1. core: `format`, `storage`, `dev-tools`, `data`, `artwork`, `pieces`,
-     `theme`, `bag`, `navigation`, `radar`
+  1. core: `format`, `dom`, `storage`, `dev-tools`, `data`, `artwork`,
+     `pieces`, `theme`, `bag`, `navigation`, `radar`
   2. the page's modules
   3. the page script (`home.js`, `catalogue.js`, `product.js`)
 - No inline `<script>` in pages, except the one-line theme setter in
@@ -190,6 +207,14 @@ when it serves a real purpose).
   localStorage; neither may ever be treated as markup.
 - **HTML strings:** build them with template literals, without whitespace or
   newlines between tags (it becomes text nodes and shifts layout).
+- **DOM lookups** use `core/dom.js`: `element(root, selector)` for an
+  element the page's own markup always contains (it fails at once, naming
+  the selector, if the markup is missing it), `elements(root, selector)` for
+  an array, and `closestTarget(event, selector)` / `targetElement(event)` in
+  event listeners. Use `querySelector()` and handle `null` only where an
+  element may legitimately be absent. Canvases get their context from
+  `radar.context2d()`. Don't name local variables `element` or `elements`
+  (they would hide the helpers).
 - **Storage:** use `localStore` and `sessionStore` (they never throw) with
   keys from `STORAGE_KEYS`; never touch `localStorage` directly.
 - **Accessibility:** keep roles, `aria-*` attributes, focus handling and
@@ -311,6 +336,7 @@ together, so a returning visitor never mixes old and new files.
 | Guide | Rule | What we do instead, and why |
 |---|---|---|
 | Google | Use ES modules (`import`/`export`) | Classic scripts with declared globals (§5). Pages must keep working when opened from disk (`file://`, where browsers block ES modules), and `scripts/export.py` builds a single self-contained HTML file. ESLint's `/* exported */` and `/* global */` checking replaces import checking. `functions/` does use ES modules, as Cloudflare requires. |
+| Google | Closure-style JSDoc types, checked by the Closure Compiler | TypeScript's JSDoc dialect, checked by `tsc` (§2, §3): maintained, and needs no build step. Google's tag names stay (`@return`, `@const`, `@fileoverview`), and `tsc` reads the `?` and `!` markers. |
 | Google | Format with Google's own tooling (clang-format) | Prettier, configured to Google's layout rules (80 columns, 2 spaces, single quotes, semicolons). |
 | clean-code | Two arguments or fewer, ideally | At most three **(lint)**: `clamp(value, min, max)` reads better than an options object. |
 | Folder guide | Source under `src/`, static files under `public/` | One `public/` folder. With no build step, the site's source is exactly what is served, so a separate `src/` would only be a copy. |

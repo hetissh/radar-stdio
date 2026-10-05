@@ -16,7 +16,7 @@ path to its new one.
 | `catalogue.html`, `product.html` | Catalogue and product page shells. |
 | `css/shared.css` | Every page: tokens (dark and light), base, header and menu, garments and lighting, captions, dialogs and bag, footer, transitions, shared classes (`.page-title`, `.radar-canvas`, `.ring-svg`, `.readout-label`). |
 | `css/home.css`, `css/catalogue.css`, `css/product.css` | One stylesheet per page. |
-| `js/core/` | Shared by every page, in load order: `format.js` (esc, pad, clamp, money), `storage.js` (localStore, sessionStore, STORAGE_KEYS), `dev-tools.js` (?stress, ?perf), `data.js` (radarData, collectionData, products, productById, bearing helpers, showLoadError), `artwork.js` (art, remoteArt, cdnWidth), `pieces.js` (productUrl, priceHtml, productCard), `theme.js` (tones, echoInk), `bag.js`, `navigation.js` (menu and page transitions; no globals), `radar.js` (radar drawing helpers). `config.js` is generated. |
+| `js/core/` | Shared by every page, in load order: `format.js` (esc, pad, clamp, money), `dom.js` (element, elements, closestTarget, targetElement), `storage.js` (localStore, sessionStore, STORAGE_KEYS), `dev-tools.js` (?stress, ?perf), `data.js` (radarData, collectionData, products, productById, bearing helpers, showLoadError), `artwork.js` (art, remoteArt, cdnWidth), `pieces.js` (productUrl, priceHtml, productCard), `theme.js` (tones, echoInk), `bag.js`, `navigation.js` (menu and page transitions; no globals), `radar.js` (radar drawing helpers). `config.js` is generated. |
 | `js/home/` | `home.js` (page script), `home-entrance.js` (entrance radar), `home-collections.js` (rails), `home-arcs.js` (rail canvases), `home-locator.js` (corner locator). |
 | `js/catalogue/` | `catalogue.js` (page script), `catalogue-state.js` (filters, sort, search, URL), `catalogue-field.js` (field view), `catalogue-radar.js` (its canvas), `catalogue-contact.js` (contact panel). |
 | `js/product/` | `product.js` (page script), `product-lock.js` (lock-on radar), `product-media.js` (views, video), `product-lens.js` (art-detail lens), `product-sizes.js` (size rings, add to bag). |
@@ -26,6 +26,7 @@ path to its new one.
 | `_routes.json` | Cloudflare Pages: run Functions only for `/api/*`. |
 | `scripts/` (repo root) | `build_data.py`, `build_images.py`, `build_config.py`, `export.py`, `sync_shopify.py`, `shopify_import.py`, `shopify_webhooks.py`, `check_shopify.py`, shared `paths.py`, `environment.py`, `shopify_api.py`, and `make_demo_video.swift`. Each file's docstring says how to run it. |
 | `functions/api/shopify-webhook.js` (repo root) | Cloudflare Pages Function: checks the Shopify signature and triggers a rebuild through the deploy hook, skipping when a queued build will already include the change. |
+| `types/browser.d.ts` (repo root) | Declares the globals the browser scripts read but don't define (`radarInlineData`, `assetUrls`), for the type check (`tsconfig.json`). |
 | `tests/` (repo root) | JavaScript tests (`tests/js`, `tests/functions`) and Python tests (`tests/py`); `npm test` runs both. |
 
 Adding or changing a piece: with the Shopify keys set, edit it in the Shopify

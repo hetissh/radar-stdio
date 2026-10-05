@@ -10,7 +10,7 @@
  */
 
 /* exported catalogueContact */
-/* global esc, pad, art, priceHtml, colourOf, collectionData */
+/* global esc, pad, element, art, priceHtml, colourOf, collectionData */
 
 const catalogueContact = (() => {
   // Fastest the panel moves from piece to piece while tracking, in ms.
@@ -38,15 +38,16 @@ const catalogueContact = (() => {
    *     label; linkFor its product page URL; getShown the plotted pieces;
    *     blipFor a plotted piece's blip.
    * @return {{
-   *   show: function(?Piece, string),
-   *   showOverview: function(!Array<number>, number),
+   *   show: function(?Piece, string): void,
+   *   showOverview: function(!Array<number>, number): void,
    *   current: function(): ?Piece,
-   *   select: function(!Piece),
-   *   release: function(),
-   *   track: function(!Piece, number),
+   *   select: function(!Piece): void,
+   *   release: function(): void,
+   *   track: function(!Piece, number): void,
    * }}
    */
   function mount({ panel, motion, coord, linkFor, getShown, blipFor }) {
+    /** @type {?Piece} */
     let piece = null;
     let locked = false; // a visitor's selection: the sweep doesn't move it
     let unlockTimer = 0;
@@ -99,7 +100,7 @@ const catalogueContact = (() => {
       }
       panel.innerHTML = next ? pieceHtml(next, mode) : NO_SIGNAL_HTML;
       if (next && !motion.matches) {
-        panel.querySelector('.contact-body').classList.add('arriving');
+        element(panel, '.contact-body').classList.add('arriving');
       }
     }
 

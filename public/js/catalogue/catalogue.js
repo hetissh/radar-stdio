@@ -11,11 +11,12 @@
 /* global esc, pad, money, priceHtml, colourOf, bearingLabel, productUrl */
 /* global productCard, collectionData, products, radarData, radarPerf */
 /* global showLoadError, STORAGE_KEYS, sessionStore */
+/* global element, elements, targetElement, closestTarget */
 /* global catalogueState, catalogueField */
 
 (async () => {
   const buildStart = performance.now();
-  const main = document.querySelector('#catalogue');
+  const main = element(document, '#catalogue');
   // Every piece's summary (no long text): data/index.json.
   try {
     await radarData.all();
@@ -127,7 +128,7 @@
     );
   }
 
-  document.querySelector('.catalogue-kicker').textContent =
+  element(document, '.catalogue-kicker').textContent =
     `${products.length} pieces / ${collectionData.length} collections`;
   main.insertAdjacentHTML(
     'beforeend',
@@ -140,24 +141,26 @@
       `<button class="clear-filters">Clear filters ×</button></div>`,
   );
 
-  const grid = main.querySelector('.catalogue-grid');
-  const indexSection = main.querySelector('.catalogue-index');
-  const indexList = main.querySelector('.index-list');
-  const fieldView = main.querySelector('.field-view');
-  const toolbar = main.querySelector('.toolbar');
-  const filters = main.querySelector('#filters');
-  const search = toolbar.querySelector('input');
-  const resultCount = toolbar.querySelector('.result-count');
-  const resultStatus = toolbar.querySelector('#result-status');
-  const filterToggle = toolbar.querySelector('.filter-toggle');
-  const empty = main.querySelector('.empty-state');
-  const moreRow = main.querySelector('.load-more-row');
+  const grid = element(main, '.catalogue-grid');
+  const indexSection = element(main, '.catalogue-index');
+  const indexList = element(main, '.index-list');
+  const fieldView = element(main, '.field-view');
+  const toolbar = element(main, '.toolbar');
+  const filters = element(main, '#filters');
+  const search = /** @type {!HTMLInputElement} */ (element(toolbar, 'input'));
+  const resultCount = element(toolbar, '.result-count');
+  const resultStatus = element(toolbar, '#result-status');
+  const filterToggle = element(toolbar, '.filter-toggle');
+  const empty = element(main, '.empty-state');
+  const moreRow = element(main, '.load-more-row');
   const sections = { grid, index: indexSection, field: fieldView };
 
   // Cards and rows are created on first use and cached, so a view costs
   // nothing until it is shown.
   const template = document.createElement('template');
+  /** @type {!Map<!Piece, !HTMLElement>} */
   const cards = new Map();
+  /** @type {!Map<!Piece, !HTMLElement>} */
   const rows = new Map();
 
   let visible = new Set(products); // pieces in range
@@ -183,14 +186,18 @@
    * @return {!HTMLElement}
    */
   function cardFor(piece) {
-    if (!cards.has(piece)) {
+    let card = cards.get(piece);
+    if (!card) {
       template.innerHTML = productCard(piece);
-      const card = template.content.firstElementChild;
-      card.href = linkFor(piece);
-      card.querySelector('.signal-tag').textContent = coord(piece);
+      const link = /** @type {!HTMLAnchorElement} */ (
+        template.content.firstElementChild
+      );
+      link.href = linkFor(piece);
+      element(link, '.signal-tag').textContent = coord(piece);
+      card = link;
       cards.set(piece, card);
     }
-    return cards.get(piece);
+    return card;
   }
 
   /**
@@ -199,7 +206,8 @@
    * @return {!HTMLElement}
    */
   function rowFor(piece) {
-    if (!rows.has(piece)) {
+    let row = rows.get(piece);
+    if (!row) {
       const collection = esc(collectionData[piece.collection].title);
       const name = esc(piece.name);
       const category = esc(piece.category);
@@ -217,9 +225,10 @@
         `<span>${category}</span>` +
         `<span class="index-coord">${coord(piece)}</span>` +
         `<span class="index-price">${priceHtml(piece)}</span></a></li>`;
-      rows.set(piece, template.content.firstElementChild);
+      row = /** @type {!HTMLElement} */ (template.content.firstElementChild);
+      rows.set(piece, row);
     }
-    return rows.get(piece);
+    return row;
   }
 
   /** @return {number} How many items the current view adds per batch. */
@@ -261,7 +270,7 @@
   function updateMoreRow() {
     const shown = Math.min(limit, currentList.length);
     moreRow.hidden = state.view === 'field' || shown >= currentList.length;
-    moreRow.querySelector('.shown-count').textContent =
+    element(moreRow, '.shown-count').textContent =
       `Showing ${shown} of ${currentList.length}`;
   }
 
@@ -289,6 +298,7 @@
     currentList = catalogue.inRange();
     visible = new Set(currentList);
     limit = batchSize();
+    /** @type {!Array<!HTMLElement>} */
     let items = [];
     if (state.view === 'field') {
       field.render();
@@ -338,17 +348,18 @@
   /** Chips, visible sections, counts and the filter toggle. */
   function renderControls() {
     const count = currentList.length;
-    main.querySelectorAll('.chip').forEach(button => {
-      const pressed = state[button.dataset.group] === button.dataset.value;
+    for (const button of elements(main, '.chip')) {
+      const pressed =
+        state[button.dataset.group ?? ''] === button.dataset.value;
       button.setAttribute('aria-pressed', String(pressed));
-    });
-    for (const [view, element] of Object.entries(sections)) {
-      element.hidden = state.view !== view || (view !== 'field' && !count);
+    }
+    for (const [view, section] of Object.entries(sections)) {
+      section.hidden = state.view !== view || (view !== 'field' && !count);
     }
     empty.hidden = !!count || state.view === 'field';
-    toolbar.querySelector('.sort-row').hidden = state.view === 'field';
+    element(toolbar, '.sort-row').hidden = state.view === 'field';
     const active = catalogue.activeFilterCount();
-    toolbar.querySelector('.clear-filters').hidden = !active;
+    element(toolbar, '.clear-filters').hidden = !active;
     const sign = filters.classList.contains('open') ? '−' : '+';
     filterToggle.textContent = `Filter ${sign}${active ? ` (${active})` : ''}`;
     resultCount.textContent = count
@@ -372,10 +383,10 @@
 
   // "Show more" moves keyboard focus to the first new item, rather than
   // leaving it on the button.
-  moreRow.querySelector('.load-more').addEventListener('click', () => {
+  element(moreRow, '.load-more').addEventListener('click', () => {
     const [first] = loadMore();
     if (!first) return;
-    const link = first.matches('a') ? first : first.querySelector('a');
+    const link = first.matches('a') ? first : element(first, 'a');
     link.focus({ preventScroll: true });
   });
   new IntersectionObserver(
@@ -395,27 +406,25 @@
   ).observe(moreRow);
 
   main.addEventListener('click', event => {
-    const button = event.target.closest('.chip');
+    const button = closestTarget(event, '.chip');
     if (button) {
-      const { group, value } = button.dataset;
+      const group = button.dataset.group ?? '';
+      const value = button.dataset.value ?? '';
       if (state[group] === value) return;
       state[group] = value;
       animateIn(apply());
       return;
     }
-    if (event.target.closest('.clear-filters')) {
+    if (closestTarget(event, '.clear-filters')) {
       catalogue.clearFilters();
       search.value = '';
       animateIn(apply());
     }
   });
   main.addEventListener('animationend', event => {
-    const element = event.target;
-    if (
-      element.classList.contains('arriving') &&
-      !element.closest('.contact')
-    ) {
-      element.classList.remove('arriving');
+    const target = targetElement(event);
+    if (target.classList.contains('arriving') && !target.closest('.contact')) {
+      target.classList.remove('arriving');
     }
   });
 
@@ -429,7 +438,7 @@
     if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) {
       return;
     }
-    if (event.target.closest('input,textarea,select,[contenteditable]')) return;
+    if (closestTarget(event, 'input,textarea,select,[contenteditable]')) return;
     event.preventDefault();
     search.focus();
     search.select();
@@ -451,7 +460,7 @@
   });
 
   // Index: a sweep line passes down the rows, at a pace set by their height.
-  const sweep = indexSection.querySelector('.index-sweep');
+  const sweep = element(indexSection, '.index-sweep');
   new ResizeObserver(() => {
     sweep.style.setProperty('--top', `${indexList.offsetTop}px`);
     sweep.style.setProperty('--h', `${indexList.offsetHeight}px`);
@@ -484,11 +493,13 @@
         renderList(0);
       }
     }
+    // In the field view the piece is plotted (checked above), so it has a
+    // blip.
     const target =
       state.view === 'field'
-        ? field.blipFor(piece)
+        ? /** @type {!HTMLElement} */ (field.blipFor(piece))
         : state.view === 'index'
-          ? rowFor(piece).querySelector('a')
+          ? element(rowFor(piece), 'a')
           : cardFor(piece);
     target.scrollIntoView({ block: 'center', behavior: 'instant' });
     target.focus({ preventScroll: true });

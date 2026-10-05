@@ -17,6 +17,7 @@ const catalogueState = (() => {
     ['price-down', 'Price ↓'],
     ['name', 'Name'],
   ];
+  /** @type {!Readonly<!Record<string, string>>} */
   const DEFAULTS = Object.freeze({
     view: 'grid',
     collection: 'all',
@@ -68,6 +69,7 @@ const catalogueState = (() => {
     );
   }
 
+  /** @type {!Record<string, function(!Piece, !Piece): number>} */
   const ORDER = {
     'orbit': byOrbit,
     'price-up': (a, b) => a.price - b.price || byOrbit(a, b),
@@ -90,13 +92,13 @@ const catalogueState = (() => {
    * Unknown values in the URL are ignored.
    * @param {string} search location.search.
    * @return {{
-   *   state: !Object<string, string>,
-   *   groups: !Object<string, {label: string, options: !Array<!Array<string>>}>,
+   *   state: !Record<string, string>,
+   *   groups: !Record<string, {label: string, options: !Array<!Array<string>>}>,
    *   returning: (!Piece|undefined),
    *   inRange: function(): !Array<!Piece>,
    *   toQuery: function(): string,
    *   activeFilterCount: function(): number,
-   *   clearFilters: function(),
+   *   clearFilters: function(): void,
    * }} returning is the piece the visitor came back from (?piece=ID).
    */
   function create(search) {
@@ -130,17 +132,20 @@ const catalogueState = (() => {
     };
 
     const params = new URLSearchParams(search);
+    /** @type {!Record<string, string>} */
     const state = { ...DEFAULTS };
     for (const [key, group] of Object.entries(groups)) {
-      if (isOption(group.options, params.get(key))) {
-        state[key] = params.get(key);
-      }
+      const value = params.get(key);
+      if (value !== null && isOption(group.options, value)) state[key] = value;
     }
-    if (VIEWS.includes(params.get('view'))) state.view = params.get('view');
-    if (isOption(SORTS, params.get('sort'))) state.sort = params.get('sort');
+    const view = params.get('view');
+    if (view !== null && VIEWS.includes(view)) state.view = view;
+    const sort = params.get('sort');
+    if (sort !== null && isOption(SORTS, sort)) state.sort = sort;
     state.q = (params.get('q') || '').trim().slice(0, SEARCH_MAX);
     const ringIds = collectionData.map(collection => collection.id);
-    if (ringIds.includes(params.get('ring'))) state.ring = params.get('ring');
+    const ring = params.get('ring');
+    if (ring !== null && ringIds.includes(ring)) state.ring = ring;
 
     // Search matches every word against a piece's names, discipline,
     // category, collection and colour.
@@ -169,7 +174,9 @@ const catalogueState = (() => {
           collectionData[piece.collection].id === state.collection) &&
         (state.colour === 'all' || (state.colour === 'black') === piece.dark) &&
         (state.artwork === 'all' || slug(piece.category) === state.artwork) &&
-        words.every(word => haystack.get(piece).includes(word))
+        words.every(word =>
+          /** @type {string} */ (haystack.get(piece)).includes(word),
+        )
       );
     }
 

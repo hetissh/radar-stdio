@@ -6,7 +6,7 @@
  */
 
 /* exported homeLocator */
-/* global pad, collectionData */
+/* global pad, element, elements, collectionData */
 
 const homeLocator = (() => {
   /**
@@ -22,18 +22,18 @@ const homeLocator = (() => {
    * @param {{
    *   nav: !HTMLElement,
    *   footer: !Element,
-   *   sections: !Array<!Element>,
+   *   sections: !Array<!HTMLElement>,
    *   motion: !MediaQueryList,
    * }} options nav is the .mini-radar (its ring buttons carry
    *     data-collection); the locator lifts so it never covers the footer;
    *     sections by collection index; motion is the prefers-reduced-motion
    *     query (instant scrolling).
-   * @return {{update: function(number)}} Call update() on every scroll with
+   * @return {{update: function(number): void}} Call update() on every scroll with
    *     the collection in view, or -1 for none.
    */
   function mount({ nav, footer, sections, motion }) {
-    const title = nav.querySelector('strong');
-    const buttons = [...document.querySelectorAll('[data-collection]')];
+    const title = element(nav, 'strong');
+    const buttons = elements(document, '[data-collection]');
     let active = -1;
 
     /** @param {number} current */

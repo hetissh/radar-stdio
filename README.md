@@ -19,8 +19,8 @@ radar-stdio/
 ├── public/               everything served to visitors (Cloudflare's output directory)
 │   ├── index.html, catalogue.html, product.html
 │   ├── js/
-│   │   ├── core/         shared by every page: format, storage, data, artwork, pieces,
-│   │   │                 theme, bag, navigation, radar; config.js (generated)
+│   │   ├── core/         shared by every page: format, dom, storage, data, artwork,
+│   │   │                 pieces, theme, bag, navigation, radar; config.js (generated)
 │   │   ├── home/         homepage modules
 │   │   ├── catalogue/    catalogue modules
 │   │   └── product/      product page modules
@@ -31,11 +31,13 @@ radar-stdio/
 ├── functions/api/        Cloudflare Pages Functions (the Shopify webhook)
 ├── scripts/              developer and build scripts (Python 3.9+, standard library only);
 │                         shared: paths.py, environment.py, shopify_api.py
+├── types/                TypeScript declarations for the type check (never served)
 ├── tests/                automated tests: JavaScript (Node's runner) and tests/py/ (unittest)
 ├── docs/                 notes, the Shopify plan, image provenance
 ├── legacy_assets/        unused files kept for reference; nothing links to them
 ├── AI_CODING_RULES.md    coding rules for people and AI assistants
-├── package.json          JavaScript tooling (Prettier, ESLint) and the npm commands
+├── package.json          JavaScript tooling (Prettier, ESLint, TypeScript) and the npm commands
+├── tsconfig.json         the type check of the JavaScript (no compiling)
 └── pyproject.toml        Python tooling (ruff, mypy) and its manifest
 ```
 
@@ -67,7 +69,7 @@ disk, using the bundled `public/data/inline.js`.
 |---|---|
 | `npm run check` | Everything below that verifies: formatting, lint, types, tests. Run before committing. |
 | `npm run format` | Format JavaScript, CSS and JSON (Prettier) and Python (ruff). |
-| `npm run lint` | Check JavaScript (ESLint) and Python (ruff, mypy) against the style and clean-code rules. |
+| `npm run lint` | Check JavaScript (ESLint, and types with TypeScript's `tsc`) and Python (ruff, mypy) against the style and clean-code rules. |
 | `npm test` | Run the JavaScript and Python tests. |
 | `python3 scripts/build_data.py` | Split `public/data/products.json` into the files each page loads, and validate it. |
 | `python3 scripts/build_images.py` | Make the AVIF/JPEG thumbnails in `public/assets/thumbs/`. |

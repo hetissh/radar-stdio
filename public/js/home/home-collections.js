@@ -11,19 +11,19 @@
 
 /* exported homeCollections */
 /* global esc, escLines, pad, clamp, collectionData, products, productById */
-/* global productCard, radarPerf, homeArcs */
+/* global element, elements, productCard, radar, radarPerf, homeArcs */
 
 /**
  * One collection's rail and its canvas; shared with home-arcs.js.
- * @typedef {Object} HomeRail
- * @property {!Element} section The collection's <section>.
+ * @typedef {object} HomeRail
+ * @property {!HTMLElement} section The collection's <section>.
  * @property {number} index The collection's index.
  * @property {!HTMLElement} element The scrolling .clothing-rail.
  * @property {!Array<!HTMLElement>} cards
  * @property {!HTMLCanvasElement} canvas
  * @property {!CanvasRenderingContext2D} context
- * @property {!Array<!Object>} points The dot field (home-arcs.js).
- * @property {!Array<!Object>} ringPoints The arcs' dots (home-arcs.js).
+ * @property {!Array<!FieldPoint>} points The dot field (home-arcs.js).
+ * @property {!Array<!ArcPoint>} ringPoints The arcs' dots (home-arcs.js).
  * @property {!Array<{index: number, born: number}>} echoes
  * @property {number} width Canvas size in CSS pixels.
  * @property {number} height
@@ -32,7 +32,7 @@
  * @property {number=} radius Orbit geometry, set by home-arcs.js.
  * @property {number=} centerY
  * @property {number=} arcBaseline
- * @property {!Array<!Object>=} foregroundZones
+ * @property {!Array<!ForegroundZone>=} foregroundZones
  */
 
 const homeCollections = (() => {
@@ -106,9 +106,9 @@ const homeCollections = (() => {
   /**
    * Wires up the sections markup() produced.
    * @param {{
-   *   sections: !Array<!Element>,
+   *   sections: !Array<!HTMLElement>,
    *   motion: !MediaQueryList,
-   *   onSync: function(number),
+   *   onSync: function(number): void,
    * }} options sections by collection index; motion is the
    *     prefers-reduced-motion query (no auto-scan); onSync is called after
    *     every scroll sync with the collection in view, or -1.
@@ -116,14 +116,16 @@ const homeCollections = (() => {
   function mount({ sections, motion, onSync }) {
     /** @type {!Array<!HomeRail>} */
     const rails = sections.map((section, index) => {
-      const canvas = section.querySelector('canvas');
+      const canvas = /** @type {!HTMLCanvasElement} */ (
+        element(section, 'canvas')
+      );
       return {
         section,
         index,
-        element: section.querySelector('.clothing-rail'),
-        cards: [...section.querySelectorAll('.product-card')],
+        element: element(section, '.clothing-rail'),
+        cards: elements(section, '.product-card'),
         canvas,
-        context: canvas.getContext('2d'),
+        context: radar.context2d(canvas),
         points: [],
         ringPoints: [],
         echoes: [],
@@ -143,8 +145,8 @@ const homeCollections = (() => {
      * @return {number} The index of the card nearest the centre.
      */
     function placeCards(rail) {
-      const element = rail.element;
-      const center = element.scrollLeft + element.clientWidth / 2;
+      const scroller = rail.element;
+      const center = scroller.scrollLeft + scroller.clientWidth / 2;
       let closest = 0;
       let nearest = Infinity;
       rail.cards.forEach((card, index) => {
@@ -153,19 +155,19 @@ const homeCollections = (() => {
           nearest = Math.abs(offset);
           closest = index;
         }
-        const normalized = offset / Math.max(300, element.clientWidth * 0.5);
+        const normalized = offset / Math.max(300, scroller.clientWidth * 0.5);
         const distance = Math.abs(normalized);
         const scale = motion.matches
           ? 1
           : 1.025 - Math.min(0.095, distance * 0.05);
-        const garment = card.querySelector('.garment-space');
+        const garment = element(card, '.garment-space');
         const garmentOffset =
           garment.offsetTop + garment.offsetHeight / 2 - card.offsetHeight / 2;
         // Anchor the garment's centre, rather than the card (which includes
         // its caption).
         const rise =
           arcs.orbitY(rail, offset) -
-          element.clientHeight / 2 -
+          scroller.clientHeight / 2 -
           scale * garmentOffset;
         card.style.setProperty('--rise', `${rise}px`);
         card.style.setProperty('--scale', String(scale));
@@ -190,27 +192,24 @@ const homeCollections = (() => {
       rail.cards.forEach((card, index) => {
         if (card.classList.contains('rail-more')) return;
         const state = index === focused ? ' / IN FOCUS' : ' / SIGNAL';
-        card.querySelector('.signal-tag').textContent = pad(index + 1) + state;
+        element(card, '.signal-tag').textContent = pad(index + 1) + state;
       });
     }
 
     /**
      * Measures where the visible cards are, for the canvas to fade under.
      * @param {!HomeRail} rail
-     * @return {!Array<!Object>} Zones, as home-arcs.js setForeground() takes.
+     * @return {!Array<!ForegroundZone>}
      */
     function measureCards(rail) {
       const stage = rail.canvas.getBoundingClientRect();
+      /** @type {!Array<!ForegroundZone>} */
       const zones = [];
       for (const card of rail.cards) {
-        const garment = card
-          .querySelector('.garment-space')
-          .getBoundingClientRect();
+        const garment = element(card, '.garment-space').getBoundingClientRect();
         if (garment.right < stage.left || garment.left > stage.right) continue;
-        const caption = card
-          .querySelector('.piece-caption')
-          .getBoundingClientRect();
-        const meta = card.querySelector('.piece-meta').getBoundingClientRect();
+        const caption = element(card, '.piece-caption').getBoundingClientRect();
+        const meta = element(card, '.piece-meta').getBoundingClientRect();
         zones.push({
           x: (garment.left + garment.right) / 2 - stage.left,
           y: (garment.top + garment.bottom) / 2 - stage.top,
@@ -226,19 +225,32 @@ const homeCollections = (() => {
     }
 
     /**
+     * The text of a .field-counter, before its progress bar.
+     * @param {!HTMLElement} counter
+     * @return {!ChildNode}
+     */
+    function counterText(counter) {
+      return /** @type {!ChildNode} */ (counter.firstChild);
+    }
+
+    /**
      * Shows "focused / total" and the progress bar. A closing "View all"
      * card is not a piece, so it isn't counted.
      * @param {!HomeRail} rail
      * @param {number} focused
      */
     function updateCounter(rail, focused) {
-      const counter = rail.section.querySelector('.field-counter');
+      const counter = element(rail.section, '.field-counter');
       const cards = rail.cards;
       const endsWithViewAll =
         cards[cards.length - 1].classList.contains('rail-more');
       const pieceCount = cards.length - (endsWithViewAll ? 1 : 0);
-      counter.firstChild.textContent = `${pad(Math.min(focused + 1, pieceCount))} / ${pad(pieceCount)}`;
-      counter.style.setProperty('--progress', (focused + 1) / cards.length);
+      counterText(counter).textContent =
+        `${pad(Math.min(focused + 1, pieceCount))} / ${pad(pieceCount)}`;
+      counter.style.setProperty(
+        '--progress',
+        String((focused + 1) / cards.length),
+      );
     }
 
     /**
@@ -250,7 +262,7 @@ const homeCollections = (() => {
       const layoutStart = performance.now();
       if (!rail.cards.length) {
         rail.foregroundZones = [];
-        rail.section.querySelector('.field-counter').firstChild.textContent =
+        counterText(element(rail.section, '.field-counter')).textContent =
           '00 / 00';
         return;
       }
@@ -295,14 +307,14 @@ const homeCollections = (() => {
      * @param {!DOMRect} rect The section's position.
      */
     function scanWithPage(rail, rect) {
-      const element = rail.element;
+      const scroller = rail.element;
       const progress = clamp(
         -rect.top / Math.max(1, rect.height - innerHeight),
         0,
         1,
       );
-      const goal = progress * (element.scrollWidth - element.clientWidth);
-      if (Math.abs(element.scrollLeft - goal) > 1) element.scrollLeft = goal;
+      const goal = progress * (scroller.scrollWidth - scroller.clientWidth);
+      if (Math.abs(scroller.scrollLeft - goal) > 1) scroller.scrollLeft = goal;
     }
 
     /**
@@ -311,10 +323,11 @@ const homeCollections = (() => {
      * @param {!HomeRail} rail
      */
     function enableDrag(rail) {
-      const element = rail.element;
+      const scroller = rail.element;
+      /** @type {?{id: number, x: number, left: number, moved: boolean}} */
       let drag = null;
       let suppressClick = false;
-      element.addEventListener(
+      scroller.addEventListener(
         'pointerdown',
         event => {
           rail.manual = true;
@@ -322,35 +335,35 @@ const homeCollections = (() => {
           drag = {
             id: event.pointerId,
             x: event.clientX,
-            left: element.scrollLeft,
+            left: scroller.scrollLeft,
             moved: false,
           };
           suppressClick = false;
         },
         { passive: true },
       );
-      element.addEventListener('pointermove', event => {
+      scroller.addEventListener('pointermove', event => {
         if (!drag) return;
         const dx = event.clientX - drag.x;
         if (Math.abs(dx) > DRAG_THRESHOLD) {
           drag.moved = true;
-          element.setPointerCapture(drag.id);
+          scroller.setPointerCapture(drag.id);
         }
         if (drag.moved) {
           event.preventDefault();
-          element.scrollLeft = drag.left - dx;
+          scroller.scrollLeft = drag.left - dx;
           suppressClick = true;
         }
       });
       const release = () => {
-        if (drag && element.hasPointerCapture(drag.id)) {
-          element.releasePointerCapture(drag.id);
+        if (drag && scroller.hasPointerCapture(drag.id)) {
+          scroller.releasePointerCapture(drag.id);
         }
         drag = null;
       };
-      element.addEventListener('pointerup', release);
-      element.addEventListener('pointercancel', release);
-      element.addEventListener(
+      scroller.addEventListener('pointerup', release);
+      scroller.addEventListener('pointercancel', release);
+      scroller.addEventListener(
         'click',
         event => {
           if (!suppressClick) return;
@@ -402,10 +415,10 @@ const homeCollections = (() => {
             rail.cards.find(each => each.dataset.product === piece.id)) ||
           rail.cards[rail.cards.length - 1];
         if (!card) return;
-        const element = rail.element;
-        const span = Math.max(1, element.scrollWidth - element.clientWidth);
+        const scroller = rail.element;
+        const span = Math.max(1, scroller.scrollWidth - scroller.clientWidth);
         const goal = clamp(
-          card.offsetLeft + card.offsetWidth / 2 - element.clientWidth / 2,
+          card.offsetLeft + card.offsetWidth / 2 - scroller.clientWidth / 2,
           0,
           span,
         );
@@ -413,7 +426,7 @@ const homeCollections = (() => {
         if (motion.matches) {
           scrollTo({ top, behavior: 'instant' });
           rail.manual = true;
-          element.scrollLeft = goal;
+          scroller.scrollLeft = goal;
         } else {
           // The page's scroll position drives the rail's scan, so scroll the
           // page to where the scan shows the card.
@@ -437,7 +450,7 @@ const homeCollections = (() => {
         arcs.resize(rail);
         layoutCards(rail);
         arcs.schedule();
-      }).observe(rail.section.querySelector('.arc-stage'));
+      }).observe(element(rail.section, '.arc-stage'));
       rail.element.addEventListener('scroll', () => layoutCards(rail), {
         passive: true,
       });

@@ -20,11 +20,17 @@
 
 /* exported catalogueField */
 /* global esc, pad, money, colourOf, collectionData, products, productById */
+/* global element, elements, closestTarget */
 /* global catalogueState, catalogueRadar, catalogueContact */
 
 /**
+ * A zoomed ring's bands: their radii, and which band each piece is in.
+ * @typedef {{radii: !Array<number>, bandOf: !Map<!Piece, number>}} RingBands
+ */
+
+/**
  * The field's live layout, shared with catalogue-radar.js.
- * @typedef {Object} FieldLayout
+ * @typedef {object} FieldLayout
  * @property {string} mode 'detail', 'summary' or 'zoom'.
  * @property {number} zoomRing The ring zoomed into, or -1.
  * @property {boolean} autoZoom Zoomed because only one ring is in range.
@@ -32,7 +38,7 @@
  * @property {!Array<!Piece>} shown Pieces plotted as blips, in orbit order.
  * @property {function(number): number} ringRadius
  * @property {function(): !Array<number>} zoomRadii The zoomed ring's bands.
- * @property {function(!Piece): !Array<number>} pointOf [left, top] in %.
+ * @property {function(!Piece): [number, number]} pointOf [left, top] in %.
  * @property {function(!Piece): boolean} isVisible Whether it is in range.
  */
 
@@ -108,44 +114,48 @@ const catalogueField = (() => {
    * Wires up the view inside the section markup() produced.
    * @param {{
    *   section: !HTMLElement,
-   *   state: !Object<string, string>,
+   *   state: !Record<string, string>,
    *   motion: !MediaQueryList,
    *   coord: function(!Piece): string,
    *   linkFor: function(!Piece): string,
    *   getList: function(): !Array<!Piece>,
    *   isVisible: function(!Piece): boolean,
-   *   apply: function(),
+   *   apply: function(): void,
    * }} options state is the catalogue's state (reads view and ring, writes
    *     ring); motion the prefers-reduced-motion query; coord a piece's
    *     coordinate label; linkFor its product page URL; getList the pieces
    *     in range, sorted; isVisible whether a piece is in range; apply
    *     re-applies the catalogue state (after zooming).
    * @return {{
-   *   render: function(),
-   *   updateContact: function(),
-   *   sync: function(),
+   *   render: function(): void,
+   *   updateContact: function(): void,
+   *   sync: function(): void,
    *   includes: function(!Piece): boolean,
    *   blipFor: function(!Piece): (!HTMLElement|undefined),
-   *   select: function(!Piece),
+   *   select: function(!Piece): void,
    * }}
    */
   function mount(options) {
     const { section, state, motion, coord, linkFor } = options;
     const { getList, isVisible, apply } = options;
-    const stage = section.querySelector('.field-stage');
-    const modeLabel = section.querySelector('.field-mode');
-    const zoomOut = section.querySelector('.zoom-out');
-    const pick = section.querySelector('.field-pick');
-    const blipLayer = stage.querySelector('.blip-layer');
-    const ringButtons = [...stage.querySelectorAll('.ring-label')];
+    const stage = element(section, '.field-stage');
+    const modeLabel = element(section, '.field-mode');
+    const zoomOut = element(section, '.zoom-out');
+    const pick = element(section, '.field-pick');
+    const blipLayer = element(stage, '.blip-layer');
+    const ringButtons = /** @type {!Array<!HTMLButtonElement>} */ (
+      elements(stage, '.ring-label')
+    );
     const coarse = matchMedia('(hover: none)');
     const template = document.createElement('template');
     /** @type {!Map<!Piece, !HTMLElement>} Created on first use. */
     const blips = new Map();
-    /** @type {!Map<number, !Object>} */
+    /** @type {!Map<number, !RingBands>} */
     const bandCache = new Map();
-    let roving = null; // the one blip in the tab order
-    let armed = null; // touch: the blip tapped once, which a second tap opens
+    /** @type {?HTMLElement} The one blip in the tab order. */
+    let roving = null;
+    /** @type {?Piece} Touch: the piece tapped once; a second tap opens it. */
+    let armed = null;
 
     /** @type {!FieldLayout} */
     const layout = {
@@ -160,19 +170,19 @@ const catalogueField = (() => {
       isVisible,
     };
     const contact = catalogueContact.mount({
-      panel: section.querySelector('.contact'),
+      panel: element(section, '.contact'),
       motion,
       coord,
       linkFor,
       getShown: () => layout.shown,
-      blipFor: piece => blips.get(piece),
+      blipFor,
     });
     const canvas = catalogueRadar.mount({
       stage,
       motion,
       layout,
       isActive: () => state.view === 'field',
-      isHidden: () => section.hidden,
+      isHidden: () => Boolean(section.hidden),
       onFirstSize: () => {
         if (state.view === 'field') renderField();
       },
@@ -185,7 +195,8 @@ const catalogueField = (() => {
      * @return {!HTMLElement}
      */
     function blipFor(piece) {
-      if (!blips.has(piece)) {
+      let blip = blips.get(piece);
+      if (!blip) {
         const collection = esc(collectionData[piece.collection].title);
         const label =
           `${esc(piece.name)}, ${collection}, ${colourOf(piece)}, ` +
@@ -195,9 +206,10 @@ const catalogueField = (() => {
           `<a class="blip${piece.dark ? ' washed' : ''}" ` +
           `href="${linkFor(piece)}" data-product="${piece.id}" ` +
           `style="${style}" aria-label="${label}"></a>`;
-        blips.set(piece, template.content.firstElementChild);
+        blip = /** @type {!HTMLElement} */ (template.content.firstElementChild);
+        blips.set(piece, blip);
       }
-      return blips.get(piece);
+      return blip;
     }
 
     /**
@@ -215,10 +227,11 @@ const catalogueField = (() => {
      * smooth weighted round-robin, weighted by each band's circumference, so
      * outer bands take more pieces and spacing stays even. Stable for a ring.
      * @param {number} ring
-     * @return {{radii: !Array<number>, bandOf: !Map<!Piece, number>}}
+     * @return {!RingBands}
      */
     function bandsOf(ring) {
-      if (bandCache.has(ring)) return bandCache.get(ring);
+      const cached = bandCache.get(ring);
+      if (cached) return cached;
       const pieces = products
         .filter(piece => piece.collection === ring)
         .sort((a, b) => a.bearing - b.bearing);
@@ -231,6 +244,7 @@ const catalogueField = (() => {
       );
       const total = radii.reduce((sum, radius) => sum + radius, 0);
       const credit = radii.map(() => 0);
+      /** @type {!Map<!Piece, number>} */
       const bandOf = new Map();
       for (const piece of pieces) {
         radii.forEach((radius, band) => {
@@ -248,14 +262,15 @@ const catalogueField = (() => {
     /**
      * A piece's position on the field.
      * @param {!Piece} piece
-     * @return {!Array<number>} [left, top] as percentages.
+     * @return {[number, number]} [left, top] as percentages.
      */
     function pointOf(piece) {
       const angle = (piece.bearing * Math.PI) / 180;
       let radius = ringRadius(piece.collection);
       if (layout.mode === 'zoom') {
         const { radii, bandOf } = bandsOf(piece.collection);
-        radius = radii[bandOf.get(piece)];
+        // bandsOf() deals every piece on the ring to a band.
+        radius = radii[/** @type {number} */ (bandOf.get(piece))];
       }
       return [
         50 + 50 * radius * Math.sin(angle),
@@ -317,7 +332,7 @@ const catalogueField = (() => {
                   piece.collection === layout.zoomRing,
               )
               .sort(catalogueState.byOrbit);
-      const elements = layout.shown.map(piece => {
+      const plotted = layout.shown.map(piece => {
         const blip = blipFor(piece);
         const [left, top] = pointOf(piece);
         blip.style.left = `${left.toFixed(3)}%`;
@@ -326,16 +341,15 @@ const catalogueField = (() => {
         blip.classList.remove('active', 'ping');
         return blip;
       });
-      blipLayer.replaceChildren(...elements);
+      blipLayer.replaceChildren(...plotted);
       // One tab stop for the whole radar; arrow keys move between blips.
       const current = contact.current();
-      const focusPiece = layout.shown.includes(current)
-        ? current
-        : layout.shown[0];
-      roving = blips.get(focusPiece) || null;
+      const focusPiece =
+        current && layout.shown.includes(current) ? current : layout.shown[0];
+      roving = (focusPiece && blips.get(focusPiece)) || null;
       if (roving) roving.tabIndex = 0;
       canvas.setTargets(
-        layout.shown.map(piece => ({ piece, element: blips.get(piece) })),
+        layout.shown.map(piece => ({ piece, element: blipFor(piece) })),
       );
       stage.classList.toggle('summary', layout.mode === 'summary');
       stage.classList.toggle('dense', layout.shown.length > DENSE_BLIPS);
@@ -425,11 +439,12 @@ const catalogueField = (() => {
     }
 
     /**
-     * @param {!Element} blip
+     * @param {!HTMLElement} blip
      * @return {!Piece}
      */
     function pieceOf(blip) {
-      return productById(blip.dataset.product);
+      // blipFor() creates blips only for loaded pieces.
+      return /** @type {!Piece} */ (productById(blip.dataset.product ?? ''));
     }
 
     /**
@@ -437,7 +452,7 @@ const catalogueField = (() => {
      * @param {!MouseEvent} event
      */
     function zoomToNearestRing(event) {
-      if (layout.mode !== 'summary' || event.target.closest('button,a')) return;
+      if (layout.mode !== 'summary' || closestTarget(event, 'button,a')) return;
       const half = canvas.halfWidth();
       const rect = stage.getBoundingClientRect();
       const distance =
@@ -472,21 +487,23 @@ const catalogueField = (() => {
         zoomAndFocus(-1);
         return;
       }
-      const blip = event.target.closest('.blip');
+      const blip = closestTarget(event, '.blip');
       const shown = layout.shown;
       if (!blip || !shown.length) return;
       const index = shown.indexOf(pieceOf(blip));
-      const next = {
+      /** @type {!Record<string, number>} */
+      const steps = {
         ArrowRight: index + 1,
         ArrowDown: index + 1,
         ArrowLeft: index - 1,
         ArrowUp: index - 1,
         Home: 0,
         End: shown.length - 1,
-      }[event.key];
+      };
+      const next = steps[event.key];
       if (next === undefined) return;
       event.preventDefault();
-      blips.get(shown[(next + shown.length) % shown.length]).focus();
+      blipFor(shown[(next + shown.length) % shown.length]).focus();
     }
 
     /**
@@ -496,7 +513,7 @@ const catalogueField = (() => {
      * @param {!MouseEvent} event
      */
     function onTouchTap(event) {
-      const blip = event.target.closest('.blip');
+      const blip = closestTarget(event, '.blip');
       if (!blip || !coarse.matches) return;
       const piece = pieceOf(blip);
       if (armed === piece) return;
@@ -515,8 +532,10 @@ const catalogueField = (() => {
      * @param {!MouseEvent} event
      */
     function nameMorph(event) {
-      const target = event.target.closest('.contact-open,.blip');
-      const tee = section.querySelector('.contact [data-morph]');
+      const target = closestTarget(event, '.contact-open,.blip');
+      const tee = /** @type {?HTMLElement} */ (
+        section.querySelector('.contact [data-morph]')
+      );
       const current = contact.current();
       if (target && tee && current) {
         if (target.getAttribute('href') === linkFor(current)) {
@@ -526,7 +545,9 @@ const catalogueField = (() => {
     }
 
     section.addEventListener('click', event => {
-      const button = event.target.closest('[data-ring]');
+      const button = /** @type {?HTMLButtonElement} */ (
+        closestTarget(event, '[data-ring]')
+      );
       if (button && !button.disabled) zoomAndFocus(Number(button.dataset.ring));
     });
     zoomOut.addEventListener('click', () => zoomAndFocus(-1));
@@ -534,14 +555,14 @@ const catalogueField = (() => {
     // Hover or focus selects a piece; it releases back to sweep tracking a
     // moment after you leave.
     stage.addEventListener('pointerover', event => {
-      const blip = event.target.closest('.blip');
+      const blip = closestTarget(event, '.blip');
       if (blip) contact.select(pieceOf(blip));
     });
     stage.addEventListener('pointerout', event => {
-      if (event.target.closest('.blip')) contact.release();
+      if (closestTarget(event, '.blip')) contact.release();
     });
     stage.addEventListener('focusin', event => {
-      const blip = event.target.closest('.blip');
+      const blip = closestTarget(event, '.blip');
       if (!blip) return;
       if (roving && roving !== blip) roving.tabIndex = -1;
       roving = blip;

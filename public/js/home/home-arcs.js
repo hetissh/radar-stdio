@@ -11,6 +11,39 @@
 /* exported homeArcs */
 /* global clamp, radar, tones, echoInk */
 
+/**
+ * A dot of the field the sweep lights.
+ * @typedef {object} FieldPoint
+ * @property {number} x
+ * @property {number} y
+ * @property {number} theta Angle from the orbit's centre, in radians.
+ * @property {number} echo Afterglow, 0 to 1.
+ * @property {number=} quietness Set by setForeground().
+ */
+
+/**
+ * A dot of one of the three orbit arcs.
+ * @typedef {object} ArcPoint
+ * @property {number} x
+ * @property {number} y
+ * @property {boolean} primary On the arc the cards ride.
+ * @property {number=} quietness Set by setForeground().
+ */
+
+/**
+ * Where one visible card is, in canvas pixels: its garment's centre (x, y)
+ * and radii (rx, ry), and its caption's box (left, right, top, bottom).
+ * @typedef {object} ForegroundZone
+ * @property {number} x
+ * @property {number} y
+ * @property {number} rx
+ * @property {number} ry
+ * @property {number} left
+ * @property {number} right
+ * @property {number} top
+ * @property {number} bottom
+ */
+
 const homeArcs = (() => {
   // How long a focus echo ("+") lingers, in milliseconds.
   const ECHO_MS = 1800;
@@ -26,13 +59,13 @@ const homeArcs = (() => {
    * @param {{rails: !Array<!HomeRail>, motion: !MediaQueryList}} options
    *     motion is the prefers-reduced-motion query: one frame per change.
    * @return {{
-   *   resize: function(!HomeRail),
+   *   resize: function(!HomeRail): void,
    *   orbitY: function(!HomeRail, number): number,
-   *   setForeground: function(!HomeRail, !Array<!Object>),
-   *   addEcho: function(!HomeRail, number),
-   *   setActive: function(number),
-   *   schedule: function(),
-   *   stop: function(),
+   *   setForeground: function(!HomeRail, !Array<!ForegroundZone>): void,
+   *   addEcho: function(!HomeRail, number): void,
+   *   setActive: function(number): void,
+   *   schedule: function(): void,
+   *   stop: function(): void,
    * }}
    */
   function mount({ rails, motion }) {
@@ -57,9 +90,9 @@ const homeArcs = (() => {
       rail.centerY = centerY;
       rail.radius = radius;
       rail.arcBaseline = baseline;
-      rail.canvas.dataset.orbitRadius = radius;
-      rail.canvas.dataset.orbitCenterX = width / 2;
-      rail.canvas.dataset.orbitCenterY = centerY;
+      rail.canvas.dataset.orbitRadius = String(radius);
+      rail.canvas.dataset.orbitCenterX = String(width / 2);
+      rail.canvas.dataset.orbitCenterY = String(centerY);
       rail.points = [];
       for (let y = 6; y < height; y += FIELD_STEP_Y) {
         for (let x = 7; x < width; x += FIELD_STEP_X) {
@@ -102,7 +135,7 @@ const homeArcs = (() => {
      * How visible a mark is: 0 under a card's caption, fading towards 1 away
      * from its garment.
      * @param {{x: number, y: number}} point
-     * @param {!Array<!Object>} zones From setForeground().
+     * @param {!Array<!ForegroundZone>} zones From setForeground().
      * @return {number}
      */
     function quietness(point, zones) {
@@ -127,9 +160,7 @@ const homeArcs = (() => {
      * Records where the cards are, so marks fade under them. Called when the
      * rail moves, rather than reading layout every frame.
      * @param {!HomeRail} rail
-     * @param {!Array<!Object>} zones One per visible card: its garment's
-     *     centre (x, y) and radii (rx, ry), and its caption's box (left,
-     *     right, top, bottom), in canvas pixels.
+     * @param {!Array<!ForegroundZone>} zones One per visible card.
      */
     function setForeground(rail, zones) {
       rail.foregroundZones = zones;
@@ -155,16 +186,15 @@ const homeArcs = (() => {
      */
     function draw(rail, { now, dt }) {
       const ctx = rail.context;
-      const { width, height } = rail;
-      if (!width || !height) return;
+      const { width, height, arcBaseline, centerY } = rail;
+      // resize() sets the size and the orbit together.
+      if (!width || !height || arcBaseline === undefined) return;
+      if (centerY === undefined) return;
       ctx.clearRect(0, 0, width, height);
       // The scan line travels left to right along the arc, wrapping around
       // off-screen.
       const scanX = ((now * 0.045) % (width + 280)) - 140;
-      const theta = Math.atan2(
-        rail.arcBaseline - rail.centerY,
-        scanX - width / 2,
-      );
+      const theta = Math.atan2(arcBaseline - centerY, scanX - width / 2);
       const decay = Math.exp(-dt / 0.75);
       for (const point of rail.points) {
         const lag = theta - point.theta;

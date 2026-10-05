@@ -9,9 +9,11 @@
  */
 
 /* exported productMedia */
-/* global esc, pad, remoteArt, cdnWidth, productLens */
+/* global esc, pad, element, elements, closestTarget, remoteArt, cdnWidth */
+/* global productLens */
 
 const productMedia = (() => {
+  /** @type {!Array<!MediaItem>} */
   const DEFAULT_MEDIA = [
     { type: 'garment', side: 'front', label: 'Front' },
     { type: 'garment', side: 'back', label: 'Back' },
@@ -113,41 +115,50 @@ const productMedia = (() => {
    */
   function mount({ stage, piece, motion }) {
     const media = mediaList(piece);
-    const garment = stage.querySelector('.piece-garment');
-    const teeView = stage.querySelector('.tee-view');
-    const tee = stage.querySelector('.concept-tee');
-    const artImage = tee.querySelector('.tee-art');
-    const strip = [...stage.querySelectorAll('[data-media]')];
-    const frame = stage.querySelector('.media-frame');
-    const pauseButton = stage.querySelector('.media-pause');
-    const mediaState = stage.querySelector('.media-state');
-    const mediaStatus = stage.querySelector('#media-status');
+    const garment = element(stage, '.piece-garment');
+    const teeView = element(stage, '.tee-view');
+    const tee = element(stage, '.concept-tee');
+    const artImage = /** @type {!HTMLImageElement} */ (
+      element(tee, '.tee-art')
+    );
+    const strip = elements(stage, '[data-media]');
+    const frame = element(stage, '.media-frame');
+    const pauseButton = element(stage, '.media-pause');
+    const mediaState = element(stage, '.media-state');
+    const mediaStatus = element(stage, '#media-status');
     /** @type {!Map<number, !HTMLElement>} Built on first view and kept. */
-    const elements = new Map();
+    const layers = new Map();
+    /** @type {!Set<number>} */
     const preloaded = new Set();
     let current = -1;
     let userPaused = false;
     let stageVisible = true;
+    /** @type {?{x: number, y: number}} Where a touch or pen swipe began. */
     let swipe = null;
 
     /**
-     * An item's <picture> or <video>, built on first view and kept, so a
-     * video keeps its place when you come back to it.
-     * @param {number} index
+     * A photo's <picture> or a video's <video>, built on first view and
+     * kept, so a video keeps its place when you come back to it.
+     * @param {!ImageView|!VideoView} item
+     * @param {number} index The item's place in the media list.
      * @return {!HTMLElement}
      */
-    function elementFor(index) {
-      if (elements.has(index)) return elements.get(index);
-      const item = media[index];
-      const template = document.createElement('template');
-      template.innerHTML =
-        item.type === 'image' ? imageHtml(item) : videoHtml(item);
-      elements.set(index, template.content.firstElementChild);
-      return elements.get(index);
+    function layerFor(item, index) {
+      let layer = layers.get(index);
+      if (!layer) {
+        const template = document.createElement('template');
+        template.innerHTML =
+          item.type === 'image' ? imageHtml(item) : videoHtml(item);
+        layer = /** @type {!HTMLElement} */ (
+          template.content.firstElementChild
+        );
+        layers.set(index, layer);
+      }
+      return layer;
     }
 
     /**
-     * @param {!MediaItem} item
+     * @param {!ImageView} item
      * @return {string} A responsive <picture>.
      */
     function imageHtml(item) {
@@ -164,7 +175,7 @@ const productMedia = (() => {
     /**
      * A video: loops play muted, films get controls. preload="none": only
      * the poster loads until the video is shown.
-     * @param {!MediaItem} item
+     * @param {!VideoView} item
      * @return {string}
      */
     function videoHtml(item) {
@@ -185,7 +196,9 @@ const productMedia = (() => {
     /** @return {?HTMLVideoElement} The video showing, if any. */
     function activeVideo() {
       const item = media[current];
-      return item && item.type === 'video' ? elements.get(current) : null;
+      if (!item || item.type !== 'video') return null;
+      // showMedia() builds a view's layer before it becomes current.
+      return /** @type {!HTMLVideoElement} */ (layers.get(current));
     }
 
     /**
@@ -240,10 +253,20 @@ const productMedia = (() => {
         inspectable:
           photo || (item.type === 'garment' && item.side === 'front'),
         photo,
-        image: photo ? elements.get(index).querySelector('img') : artImage,
+        image: photo ? photoImage(index) : artImage,
         surface: item.type === 'garment' ? garment : frame,
         fullSrc: photo ? mediaThumb(item.src, 1280, 'jpg') : fullArt,
       };
+    }
+
+    /**
+     * The <img> of a photo view, once built.
+     * @param {number} index
+     * @return {!HTMLImageElement}
+     */
+    function photoImage(index) {
+      const layer = /** @type {!HTMLElement} */ (layers.get(index));
+      return /** @type {!HTMLImageElement} */ (element(layer, 'img'));
     }
 
     /**
@@ -272,7 +295,7 @@ const productMedia = (() => {
         // centre.
         garment.classList.add('media-hidden');
         frame.hidden = false;
-        frame.replaceChildren(elementFor(index));
+        frame.replaceChildren(layerFor(item, index));
       }
       lens.setView(lensView(item, index));
       const position = `${pad(index + 1)} / ${pad(media.length)}`;
@@ -334,9 +357,10 @@ const productMedia = (() => {
      * @param {!KeyboardEvent} event
      */
     function onStripKey(event) {
-      const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[
-        event.key
-      ];
+      /** @type {!Record<string, number>} */
+      const steps = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+      const step = steps[event.key];
+      /** @type {?number} */
       let target = null;
       if (step) {
         target = stepFrom(step);
@@ -374,9 +398,9 @@ const productMedia = (() => {
       });
       button.addEventListener('keydown', onStripKey);
     });
-    for (const element of [teeView, frame]) {
-      element.addEventListener('animationend', () =>
-        element.classList.remove('wipe'),
+    for (const layer of [teeView, frame]) {
+      layer.addEventListener('animationend', () =>
+        layer.classList.remove('wipe'),
       );
     }
     pauseButton.addEventListener('click', togglePause);
@@ -404,7 +428,7 @@ const productMedia = (() => {
     });
     motion.addEventListener('change', () => {
       const video = activeVideo();
-      if (motion.matches && video && media[current].mode === 'loop') {
+      if (motion.matches && video && isLoop(media[current])) {
         video.pause();
       } else {
         playLoop();
@@ -422,7 +446,7 @@ const productMedia = (() => {
         const swipeable =
           event.pointerType !== 'mouse' &&
           !lens.isOpen() &&
-          !event.target.closest('video,button');
+          !closestTarget(event, 'video,button');
         if (swipeable) swipe = { x: event.clientX, y: event.clientY };
       },
       { passive: true },

@@ -14,11 +14,12 @@
 
 /* exported collectionData, products, radarData, productById, showLoadError */
 /* exported bearingOf, bearingLabel, freeBearing */
-/* global esc, pad, stressCount, addStressPieces, showStressBadge, bag */
+/* global esc, pad, element, stressCount, addStressPieces, showStressBadge */
+/* global bag */
 
 /**
  * A collection, as loaded (one ring of the radar).
- * @typedef {Object} Collection
+ * @typedef {object} Collection
  * @property {string} id URL-safe handle, e.g. 'new-arrivals'.
  * @property {string} title
  * @property {string} copy Short description; may contain line breaks.
@@ -27,22 +28,41 @@
 
 /**
  * One item a product page can show: the garment's front or back, a photo or
- * a video. Paths are relative to assets/.
- * @typedef {Object} MediaItem
- * @property {string} type 'garment', 'image' or 'video'.
+ * a video. Paths are relative to assets/. scripts/build_data.py checks each
+ * kind has its fields.
+ * @typedef {GarmentView|ImageView|VideoView} MediaItem
+ */
+
+/**
+ * @typedef {object} GarmentView
+ * @property {'garment'} type
  * @property {string} label
- * @property {string=} side Garments: 'front' or 'back'.
- * @property {string=} src Images and videos.
- * @property {string=} poster Videos.
- * @property {string=} alt Images and videos.
- * @property {string=} mode Videos: 'loop' (muted, autoplays) or 'film'.
- * @property {string=} captions Videos: a WebVTT file.
+ * @property {'front'|'back'} side
+ */
+
+/**
+ * @typedef {object} ImageView
+ * @property {'image'} type
+ * @property {string} label
+ * @property {string} src
+ * @property {string} alt
+ */
+
+/**
+ * @typedef {object} VideoView
+ * @property {'video'} type
+ * @property {string} label
+ * @property {string} src An MP4 file.
+ * @property {string} poster
+ * @property {string} alt
+ * @property {string=} mode 'loop' (muted, autoplays) or 'film'.
+ * @property {string=} captions A WebVTT file.
  */
 
 /**
  * A piece (one garment). Summaries leave out description, status and media,
  * which only radarData.piece() loads.
- * @typedef {Object} Piece
+ * @typedef {object} Piece
  * @property {string} id Two or more digits, e.g. '07'.
  * @property {string} name
  * @property {string} title The artwork's title.
@@ -63,11 +83,17 @@
  */
 
 /**
+ * A piece as stored in the data files (a summary, or in full in
+ * data/pieces/<id>.json), which name its collection by id, not ring index.
+ * @typedef {Omit<Piece, 'collection'> & {collection: string}} PieceRecord
+ */
+
+/**
  * A data file as loaded (data/home.json, data/index.json or one collection's
- * file). Its pieces name their collection by id, not by ring index.
- * @typedef {Object} CatalogueFile
+ * file).
+ * @typedef {object} CatalogueFile
  * @property {!Array<!Collection>} collections
- * @property {!Array<!Object>} products
+ * @property {!Array<!PieceRecord>} products
  */
 
 /** @type {!Array<!Collection>} */
@@ -90,8 +116,8 @@ const { radarData, productById, bearingOf, bearingLabel, freeBearing } =
       return new Promise(resolve => {
         const script = document.createElement('script');
         script.src = src;
-        script.onload = resolve;
-        script.onerror = resolve;
+        script.onload = () => resolve();
+        script.onerror = () => resolve();
         document.head.append(script);
       });
     }
@@ -100,7 +126,7 @@ const { radarData, productById, bearingOf, bearingLabel, freeBearing } =
      * Fetches a data file. Pages opened from disk (file://) can't fetch, so
      * there it falls back to the bundled copy of every file, data/inline.js.
      * @param {string} path For example 'data/home.json'.
-     * @return {!Promise<!Object>}
+     * @return {!Promise<unknown>} The parsed JSON.
      */
     async function getData(path) {
       const inline = () => window.radarInlineData?.[path];
@@ -128,13 +154,15 @@ const { radarData, productById, bearingOf, bearingLabel, freeBearing } =
      * Like getData(), but a missing file (404) resolves to null. Any other
      * failure still rejects, so the page can offer a retry.
      * @param {string} path
-     * @return {!Promise<?Object>}
+     * @return {!Promise<unknown>} The parsed JSON, or null.
      */
     async function getOptionalData(path) {
       try {
         return await getData(path);
       } catch (error) {
-        if (error.status === 404) return null;
+        if (/** @type {{status?: number}} */ (error).status === 404) {
+          return null;
+        }
         throw error;
       }
     }
@@ -148,9 +176,10 @@ const { radarData, productById, bearingOf, bearingLabel, freeBearing } =
       const ringOf = new Map(
         collectionData.map((collection, ring) => [collection.id, ring]),
       );
+      // build_data.py guarantees every piece's collection is in the file.
       products = file.products.map(piece => ({
         ...piece,
-        collection: ringOf.get(piece.collection),
+        collection: /** @type {number} */ (ringOf.get(piece.collection)),
       }));
       collectionData.forEach((collection, ring) =>
         checkBearings(
@@ -252,7 +281,9 @@ const { radarData, productById, bearingOf, bearingLabel, freeBearing } =
        */
       async home() {
         if (stressCount) return this.all();
-        useCatalogue(await getData('data/home.json'));
+        useCatalogue(
+          /** @type {!CatalogueFile} */ (await getData('data/home.json')),
+        );
       },
 
       /**
@@ -260,7 +291,9 @@ const { radarData, productById, bearingOf, bearingLabel, freeBearing } =
        * @return {!Promise<void>}
        */
       async all() {
-        useCatalogue(await getData('data/index.json'));
+        useCatalogue(
+          /** @type {!CatalogueFile} */ (await getData('data/index.json')),
+        );
       },
 
       /**
@@ -274,8 +307,8 @@ const { radarData, productById, bearingOf, bearingLabel, freeBearing } =
           await this.all();
           const piece = productById(key);
           if (!piece) return null;
-          const detail = await getOptionalData(
-            `data/pieces/${piece.base || piece.id}.json`,
+          const detail = /** @type {?PieceRecord} */ (
+            await getOptionalData(`data/pieces/${piece.base || piece.id}.json`)
           );
           return Object.assign(piece, {
             description: detail ? detail.description : '',
@@ -284,12 +317,16 @@ const { radarData, productById, bearingOf, bearingLabel, freeBearing } =
           });
         }
         if (!/^\d+$/.test(key)) return null;
-        const detail = await getOptionalData(`data/pieces/${key}.json`);
-        if (!detail) return null;
-        useCatalogue(
-          await getData(`data/collections/${detail.collection}.json`),
+        const detail = /** @type {?PieceRecord} */ (
+          await getOptionalData(`data/pieces/${key}.json`)
         );
-        return Object.assign(productById(key), {
+        if (!detail) return null;
+        const file = await getData(
+          `data/collections/${detail.collection}.json`,
+        );
+        useCatalogue(/** @type {!CatalogueFile} */ (file));
+        // The piece's own collection file always contains it.
+        return Object.assign(/** @type {!Piece} */ (productById(key)), {
           description: detail.description,
           status: detail.status,
           media: detail.media,
@@ -317,7 +354,7 @@ function showLoadError(container, what) {
       '<button type="button" class="load-retry mono">Retry ↻</button>' +
       '</section>',
   );
-  container
-    .querySelector('.load-retry')
-    .addEventListener('click', () => location.reload());
+  element(container, '.load-retry').addEventListener('click', () =>
+    location.reload(),
+  );
 }

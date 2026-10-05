@@ -9,6 +9,23 @@
 /* exported homeEntrance */
 /* global radar, tones */
 
+/**
+ * One glyph cell of the entrance grid.
+ * @typedef {object} EntranceCell
+ * @property {number} x
+ * @property {number} y
+ * @property {number} theta Angle from the centre, in radians.
+ * @property {number} seed A fixed per-cell offset for the shimmer.
+ * @property {string} glyph The static grid mark, or ''.
+ * @property {boolean} axis On the centre row or column.
+ * @property {number} echo Afterglow, 0 to 1.
+ */
+
+/**
+ * One dot of a ring.
+ * @typedef {{x: number, y: number, theta: number}} RingPoint
+ */
+
 const homeEntrance = (() => {
   // Radians of afterglow behind the sweep line.
   const SWEEP_WIDTH = 2.05;
@@ -22,19 +39,21 @@ const homeEntrance = (() => {
   /**
    * Starts the radar.
    * @param {{
-   *   section: !Element,
+   *   section: !HTMLElement,
    *   canvas: !HTMLCanvasElement,
    *   motion: !MediaQueryList,
    * }} options section is the entrance the canvas fills; motion is the
    *     prefers-reduced-motion query (a still radar).
    */
   function mount({ section, canvas, motion }) {
-    const context = canvas.getContext('2d');
+    const context = radar.context2d(canvas);
     const base = document.createElement('canvas');
-    const baseContext = base.getContext('2d');
+    const baseContext = radar.context2d(base);
     let width = 0;
     let height = 0;
+    /** @type {!Array<!EntranceCell>} */
     let cells = [];
+    /** @type {!Array<!RingPoint>} */
     let ringPoints = [];
     let lastPaint = 0;
     let angle = -25; // degrees
@@ -75,9 +94,10 @@ const homeEntrance = (() => {
      * pipe combinations.
      * @param {!Array<number>} radii Pixels.
      * @param {number} spacing Pixels between dots.
-     * @return {!Array<{x: number, y: number, theta: number}>}
+     * @return {!Array<!RingPoint>}
      */
     function layoutRings(radii, spacing) {
+      /** @type {!Array<!RingPoint>} */
       const points = [];
       for (const radius of radii) {
         const steps = Math.round((radar.TAU * radius) / spacing);
@@ -96,13 +116,14 @@ const homeEntrance = (() => {
      * The glyph grid, centred on the screen.
      * @param {number} cellWidth Pixels.
      * @param {number} cellHeight Pixels.
-     * @return {!Array<!Object>}
+     * @return {!Array<!EntranceCell>}
      */
     function layoutCells(cellWidth, cellHeight) {
       const columns = Math.ceil(width / cellWidth);
       const rows = Math.ceil(height / cellHeight);
       const middleCol = Math.floor(columns / 2);
       const middleRow = Math.floor(rows / 2);
+      /** @type {!Array<!EntranceCell>} */
       const result = [];
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < columns; col++) {
@@ -112,7 +133,6 @@ const homeEntrance = (() => {
             x,
             y,
             theta: Math.atan2(y - height / 2, x - width / 2),
-            // A fixed per-cell offset for the shimmer.
             seed: (row * 197 + col * 53) % 997,
             glyph: radar.gridGlyph(col - middleCol, row - middleRow),
             axis: col === middleCol || row === middleRow,

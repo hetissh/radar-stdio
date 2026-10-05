@@ -7,7 +7,19 @@
  */
 
 /* exported productLock */
-/* global pad, clamp, radar, tones */
+/* global pad, clamp, element, radar, tones */
+
+/**
+ * One glyph cell of the lock-on grid.
+ * @typedef {object} LockCell
+ * @property {number} x
+ * @property {number} y
+ * @property {number} theta Angle from the garment's centre, in radians.
+ * @property {string} glyph The static grid mark, or ''.
+ * @property {boolean} axis On the centre row or column.
+ * @property {number} quiet How visible near the garment, 0.08 to 1.
+ * @property {number} echo Afterglow, 0 to 1.
+ */
 
 const productLock = (() => {
   // Pixels between glyph columns and rows.
@@ -48,15 +60,18 @@ const productLock = (() => {
    *     prefers-reduced-motion query (shows the locked state, still).
    */
   function mount({ stage, centre, art, bearing, number, motion }) {
-    const canvas = stage.querySelector('.lock-field');
-    const ctx = canvas.getContext('2d');
+    const canvas = /** @type {!HTMLCanvasElement} */ (
+      element(stage, '.lock-field')
+    );
+    const ctx = radar.context2d(canvas);
     const base = document.createElement('canvas');
-    const baseCtx = base.getContext('2d');
-    const stateLabel = stage.querySelector('.lock-state');
+    const baseCtx = radar.context2d(base);
+    const stateLabel = element(stage, '.lock-state');
     const lockAngle = -Math.PI / 2 + (bearing * Math.PI) / 180;
     const start = performance.now();
     let width = 0;
     let height = 0;
+    /** @type {!Array<!LockCell>} */
     let cells = [];
     let cx = 0;
     let cy = 0;
@@ -84,9 +99,10 @@ const productLock = (() => {
      * the homepage arcs.
      * @param {number} radiusX The garment's ellipse, in pixels.
      * @param {number} radiusY
-     * @return {!Array<!Object>}
+     * @return {!Array<!LockCell>}
      */
     function layoutCells(radiusX, radiusY) {
+      /** @type {!Array<!LockCell>} */
       const result = [];
       const firstCol = -Math.ceil(cx / CELL_WIDTH);
       const lastCol = Math.ceil((width - cx) / CELL_WIDTH);

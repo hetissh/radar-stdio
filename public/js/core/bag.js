@@ -6,12 +6,13 @@
 
 /* exported bag */
 /* global esc, pad, money, productUrl, productById */
+/* global element, elements, closestTarget */
 /* global STORAGE_KEYS, localStore */
 
 /**
  * One line in the bag. Each line keeps the name and price from when it was
  * added, like a real basket.
- * @typedef {Object} BagItem
+ * @typedef {object} BagItem
  * @property {string} id The piece's id.
  * @property {string} size
  * @property {number} qty
@@ -20,8 +21,8 @@
  */
 
 const bag = (() => {
-  const dialog = document.querySelector('#bag');
-  const list = dialog.querySelector('.bag-items');
+  const dialog = /** @type {!HTMLDialogElement} */ (element(document, '#bag'));
+  const list = element(dialog, '.bag-items');
 
   /**
    * Reads saved bag lines, dropping anything malformed.
@@ -29,8 +30,9 @@ const bag = (() => {
    * @return {!Array<!BagItem>}
    */
   function parseBag(json) {
+    if (!json) return [];
     try {
-      return (JSON.parse(json) || []).filter(
+      return /** @type {!Array<!BagItem>} */ (JSON.parse(json) || []).filter(
         item => item && item.id && item.qty > 0,
       );
     } catch {
@@ -132,9 +134,9 @@ const bag = (() => {
   /** Redraws the header counts and the dialog's list. */
   function render() {
     const count = pad(bag.count());
-    document.querySelectorAll('.bag-count').forEach(element => {
-      element.textContent = count;
-    });
+    for (const counter of elements(document, '.bag-count')) {
+      counter.textContent = count;
+    }
     if (!bag.items.length) {
       list.innerHTML = '<p>Your concept bag is empty.</p>';
       return;
@@ -150,7 +152,7 @@ const bag = (() => {
   }
 
   list.addEventListener('click', event => {
-    const button = event.target.closest('[data-step]');
+    const button = closestTarget(event, '[data-step]');
     if (!button) return;
     const index = Number(button.dataset.bag);
     const step = Number(button.dataset.step);
@@ -159,7 +161,7 @@ const bag = (() => {
     const same = dialog.querySelector(
       `[data-bag="${index}"][data-step="${step}"]`,
     );
-    (same || dialog.querySelector('.bag-close')).focus();
+    /** @type {!HTMLElement} */ (same || element(dialog, '.bag-close')).focus();
   });
   document.querySelectorAll('.bag-open').forEach(button =>
     button.addEventListener('click', () => {
@@ -168,9 +170,7 @@ const bag = (() => {
       document.body.classList.add('locked');
     }),
   );
-  dialog
-    .querySelector('.bag-close')
-    .addEventListener('click', () => dialog.close());
+  element(dialog, '.bag-close').addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () =>
     document.body.classList.remove('locked'),
   );

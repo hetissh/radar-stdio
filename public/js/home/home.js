@@ -5,7 +5,8 @@
  * is in view (home-locator.js).
  */
 
-/* global collectionData, radarData, radarPerf, showLoadError */
+/* global element, elements, collectionData, radarData, radarPerf */
+/* global showLoadError */
 /* global homeEntrance, homeLocator, homeCollections */
 
 (async () => {
@@ -14,12 +15,14 @@
   // and featured pieces); the entrance radar starts straight away.
   const loading = radarData.home();
   homeEntrance.mount({
-    section: document.querySelector('.entrance'),
-    canvas: document.querySelector('.radar-scan'),
+    section: element(document, '.entrance'),
+    canvas: /** @type {!HTMLCanvasElement} */ (
+      element(document, '.radar-scan')
+    ),
     motion,
   });
 
-  const list = document.querySelector('#collection-list');
+  const list = element(document, '#collection-list');
   try {
     await loading;
     const homeStart = performance.now();
@@ -27,12 +30,12 @@
       (sum, collection) => sum + collection.count,
       0,
     );
-    document.querySelector('.view-all').textContent = `View all ${total} ↗`;
+    element(document, '.view-all').textContent = `View all ${total} ↗`;
     list.innerHTML = homeCollections.markup();
-    const sections = [...list.querySelectorAll('.collection')];
+    const sections = elements(list, '.collection');
     const locator = homeLocator.mount({
-      nav: document.querySelector('.mini-radar'),
-      footer: document.querySelector('.field-footer'),
+      nav: element(document, '.mini-radar'),
+      footer: element(document, '.field-footer'),
       sections,
       motion,
     });

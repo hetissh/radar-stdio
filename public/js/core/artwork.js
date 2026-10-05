@@ -30,7 +30,7 @@ const { art, remoteArt, cdnWidth } = (() => {
    */
   function cdnWidth(url, width) {
     const resized = new URL(url);
-    resized.searchParams.set('width', width);
+    resized.searchParams.set('width', String(width));
     return resized.href;
   }
 
@@ -51,8 +51,8 @@ const { art, remoteArt, cdnWidth } = (() => {
    * Markup for a piece's artwork: a <picture> with AVIF and JPEG, or an
    * <img> for CDN images and in the portable export.
    * @param {!Piece} piece
-   * @param {{sizes: (string|undefined), className: (string|undefined),
-   *     eager: (boolean|undefined)}=} options sizes is the CSS width hint;
+   * @param {{sizes?: string, className?: string, eager?: boolean}=} options
+   *     sizes is the CSS width hint;
    *     eager loads the image straight away (by default only piece 01's).
    * @return {string}
    */
@@ -71,6 +71,10 @@ const { art, remoteArt, cdnWidth } = (() => {
     if (typeof assetUrls !== 'undefined') {
       return `<img src="${assetUrls[piece.image]}"${attrs}>`;
     }
+    /**
+     * @param {string=} ext
+     * @return {string}
+     */
     const srcset = ext =>
       `${thumb(piece, 320, ext)} 320w, ${thumb(piece, 640, ext)} 640w`;
     if (remoteArt(piece.image)) {

@@ -76,10 +76,17 @@ export async function verifySignature(body, signature, secret) {
 }
 
 /**
+ * One deployment, as the Cloudflare Pages API lists it (the fields used).
+ * @typedef {object} PagesDeployment
+ * @property {string} environment 'production' or 'preview'.
+ * @property {{name: string, status: string}=} latest_stage
+ */
+
+/**
  * Whether a production deployment is already waiting to start, so it will
  * include this change anyway.
- * @param {!Object<string, string>} env
- * @param {function(string, !Object): !Promise<!Response>=} fetchImpl
+ * @param {!Record<string, string>} env
+ * @param {function(string, !RequestInit): !Promise<!Response>=} fetchImpl
  * @return {!Promise<boolean>}
  */
 export async function buildPending(env, fetchImpl = fetch) {
@@ -95,12 +102,15 @@ export async function buildPending(env, fetchImpl = fetch) {
       headers: { authorization: `Bearer ${env.CF_API_TOKEN}` },
     });
     if (!response.ok) return false;
+    /** @type {{result?: !Array<!PagesDeployment>}} */
     const { result = [] } = await response.json();
-    return result.some(
-      deployment =>
-        deployment.environment === 'production' &&
-        BEFORE_SYNC.has(deployment.latest_stage?.name) &&
-        !STOPPED.includes(deployment.latest_stage?.status),
+    return result.some(({ environment, latest_stage: stage }) =>
+      Boolean(
+        environment === 'production' &&
+          stage &&
+          BEFORE_SYNC.has(stage.name) &&
+          !STOPPED.includes(stage.status),
+      ),
     );
   } catch {
     // When unsure, rebuild: freshness beats saving a build.
@@ -110,8 +120,8 @@ export async function buildPending(env, fetchImpl = fetch) {
 
 /**
  * Handles a webhook: verify, then trigger a rebuild unless one is pending.
- * @param {{request: !Request, env: !Object<string, string>}} context
- * @param {function(string, !Object): !Promise<!Response>=} fetchImpl
+ * @param {{request: !Request, env: !Record<string, string>}} context
+ * @param {function(string, !RequestInit): !Promise<!Response>=} fetchImpl
  * @return {!Promise<!Response>}
  */
 export async function onRequestPost({ request, env }, fetchImpl = fetch) {
