@@ -1,4 +1,11 @@
-/* Shared by every RADAR page: tokens, reset, header, garments, footer and the concept bag. */
+/*
+ * Shared by every RADAR page: design tokens, base elements, the header and
+ * navigation, garments (the product card), dialogs and the concept bag, the
+ * footer, page transitions and small utilities. Dark is the default theme;
+ * [data-theme='light'] rules follow the part they adjust.
+ */
+
+/* Design tokens */
 :root {
   --paper: #000;
   --ink: #f1f1f1;
@@ -14,6 +21,8 @@
   --muted: #6b6b6b;
   --rule: #d9d8d3;
 }
+
+/* Base elements and utilities */
 * {
   box-sizing: border-box;
 }
@@ -35,17 +44,13 @@ body.locked {
 a {
   color: inherit;
   text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
 }
 button {
   font: inherit;
   color: inherit;
   cursor: pointer;
-}
-button,
-a {
   -webkit-tap-highlight-color: transparent;
-}
-button {
   background: none;
   border: 0;
   padding: 0;
@@ -65,6 +70,10 @@ img {
   background: #ddd;
   color: #000;
 }
+[data-theme='light'] ::selection {
+  background: #222;
+  color: #f3f2ee;
+}
 .mono {
   font: 11px/1.55 var(--mono);
   text-transform: uppercase;
@@ -76,9 +85,16 @@ img {
 .wrap {
   padding-inline: var(--gutter);
 }
-[data-theme='light'] ::selection {
-  background: #222;
-  color: #f3f2ee;
+[hidden] {
+  display: none !important;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 /* Header and navigation */
@@ -102,6 +118,9 @@ img {
   height: auto;
   object-fit: contain;
 }
+[data-theme='light'] .brand img {
+  filter: invert(0.92);
+}
 .nav {
   display: flex;
   grid-column: 3;
@@ -117,17 +136,35 @@ img {
 .nav a:hover {
   opacity: 0.6;
 }
+.nav a[aria-current='page'] {
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
 .menu-button {
   display: none;
 }
 .theme-toggle {
   font: 11px var(--mono);
 }
+/* The product and catalogue pages' "← back" link, left of the logo. */
+.crumb {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+  font: 11px var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 10px 0;
+}
+.crumb:hover {
+  opacity: 0.6;
+}
 @media (max-width: 1000px) {
   .nav {
     gap: 22px;
   }
 }
+/* Medium screens: the navigation moves onto its own row below the logo. */
 @media (min-width: 701px) and (max-width: 900px) {
   .nav {
     grid-column: 1/-1;
@@ -137,6 +174,7 @@ img {
     gap: 28px;
   }
 }
+/* Small screens: the navigation folds into a menu. */
 @media (max-width: 700px) {
   .header {
     padding-top: 18px;
@@ -173,53 +211,22 @@ img {
     font-size: 14px;
     padding: 10px 0;
   }
-}
-[data-theme='light'] .brand img {
-  filter: invert(0.92);
-}
-@media (max-width: 700px) {
   [data-theme='light'] .nav {
     background: var(--paper);
     border-top-color: #c9c8c3;
   }
-}
-
-/* Dialogs */
-dialog {
-  border: 0;
-  padding: 0;
-  background: var(--paper);
-  color: var(--ink);
-  width: min(1160px, calc(100% - 64px));
-  max-height: 90svh;
-}
-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.75);
-}
-.detail-bar {
-  display: flex;
-  justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--rule);
-  align-items: center;
-}
-.close {
-  font-size: 12px;
-}
-@media (max-width: 700px) {
-  .detail-bar {
-    padding: 16px;
+  .crumb {
+    font-size: 10px;
   }
-  dialog {
-    width: calc(100% - 24px);
-    max-height: 92svh;
+  .crumb-trail {
+    display: none;
   }
 }
-[data-theme='light'] dialog::backdrop {
-  background: rgba(20, 20, 20, 0.38);
-}
 
-/* Garments: illustrative tees with soft light behind them. */
+/*
+ * Garments: illustrative tees standing in a soft pool of light that
+ * separates them from the radar field behind.
+ */
 .garment-space {
   height: clamp(240px, 34svh, 410px);
   position: relative;
@@ -227,15 +234,77 @@ dialog::backdrop {
   align-items: center;
   justify-content: center;
   transition: background 0.3s;
+  isolation: isolate;
+  background: none;
+}
+/* The light, feathered to an oval inside its own box so it never ends in a
+   hard edge on any card or stage. */
+.garment-space:before {
+  content: '';
+  position: absolute;
+  inset: -10% -12% -8%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 50% 47%,
+    #292929 0%,
+    #202020 29%,
+    #111 49%,
+    rgba(0, 0, 0, 0) 73%
+  );
+  opacity: var(--focus-light, 1);
+  transition: opacity 0.25s;
+  -webkit-mask-image: radial-gradient(closest-side, #000 62%, transparent);
+  mask-image: radial-gradient(closest-side, #000 62%, transparent);
+}
+.garment-space:has(.concept-tee.dark):before {
+  background: radial-gradient(
+    ellipse at 50% 47%,
+    #505050 0%,
+    #404040 27%,
+    #252525 44%,
+    #111 58%,
+    rgba(0, 0, 0, 0) 76%
+  );
+}
+/* In the light theme chalk garments need the stronger backdrop; washed black
+   separates on its own. */
+[data-theme='light'] .garment-space:before {
+  background: radial-gradient(
+    ellipse at 50% 47%,
+    #d2d1cb 0%,
+    #d9d8d2 29%,
+    #e5e4df 49%,
+    rgba(243, 242, 238, 0) 73%
+  );
+}
+[data-theme='light'] .garment-space:has(.concept-tee.dark):before {
+  background: radial-gradient(
+    ellipse at 50% 47%,
+    #e3e2dd 0%,
+    #e9e8e3 35%,
+    rgba(243, 242, 238, 0) 70%
+  );
+}
+@media (prefers-reduced-motion: reduce) {
+  .garment-space:before {
+    transition: none;
+  }
 }
 .signal-tag {
   position: absolute;
   top: 0;
   left: 0;
-  color: #777;
+  color: #aaa;
   font: 9px var(--mono);
   letter-spacing: 0.05em;
+  z-index: 1;
 }
+[data-theme='light'] .signal-tag {
+  color: #666;
+}
+/* The tee: a gradient clipped to a T-shirt silhouette, with a collar and a
+   faint hem line drawn by its pseudo-elements. */
 .concept-tee {
   position: relative;
   width: 88%;
@@ -289,11 +358,11 @@ dialog::backdrop {
 .concept-tee.dark {
   background: linear-gradient(
     95deg,
-    #111,
-    #292929 25%,
-    #383838 48%,
-    #191919 78%,
-    #282828
+    #1c1c1c,
+    #303030 25%,
+    #424242 48%,
+    #252525 78%,
+    #333
   );
 }
 .concept-tee.dark:before {
@@ -312,85 +381,17 @@ dialog::backdrop {
 .concept-tee.dark img {
   mix-blend-mode: normal;
 }
+/* The caption sits on a solid band so the radar never shows through text. */
 .piece-caption {
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  padding: 18px 4px 0;
+  padding: 17px 4px 0;
   font-size: 14px;
   line-height: 1.4;
-}
-.piece-caption .mono {
-  font-size: 10px;
-  white-space: nowrap;
-  color: #aaa;
-}
-.piece-caption del {
-  color: #666;
-  display: block;
-  font-size: 9px;
-}
-.piece-meta {
-  font: 9px var(--mono);
-  color: #777;
-  margin: 8px 4px 0;
-}
-/* Soft light separates the clothing from the distant radar field. */
-.garment-space {
-  isolation: isolate;
-  background: none;
-}
-.garment-space:before {
-  content: '';
-  position: absolute;
-  inset: -6% -8% -3%;
-  z-index: -1;
-  pointer-events: none;
-  background: radial-gradient(
-    ellipse at 50% 47%,
-    #292929 0%,
-    #202020 29%,
-    #111 49%,
-    rgba(0, 0, 0, 0) 73%
-  );
-  opacity: var(--focus-light, 1);
-  transition: opacity 0.25s;
-}
-/* Feather the light to an oval inside its own box, so it never ends in a hard edge on any card or stage. */
-.garment-space:before {
-  inset: -10% -12% -8%;
-  -webkit-mask-image: radial-gradient(closest-side, #000 62%, transparent);
-  mask-image: radial-gradient(closest-side, #000 62%, transparent);
-}
-.garment-space:has(.concept-tee.dark):before {
-  background: radial-gradient(
-    ellipse at 50% 47%,
-    #505050 0%,
-    #404040 27%,
-    #252525 44%,
-    #111 58%,
-    rgba(0, 0, 0, 0) 76%
-  );
-}
-.concept-tee.dark {
-  background: linear-gradient(
-    95deg,
-    #1c1c1c,
-    #303030 25%,
-    #424242 48%,
-    #252525 78%,
-    #333
-  );
-}
-.signal-tag {
-  color: #aaa;
-  z-index: 1;
-}
-.piece-caption {
   position: relative;
   isolation: isolate;
   align-items: baseline;
-  padding: 17px 4px 0;
   border-top: 1px solid #ffffff21;
   color: #f2f2ee;
 }
@@ -404,41 +405,20 @@ dialog::backdrop {
 }
 .piece-caption .mono {
   font-size: 11px;
+  white-space: nowrap;
   color: #ddd;
 }
 .piece-caption del {
   color: #999;
+  display: block;
+  font-size: 9px;
 }
 .piece-meta {
-  position: relative;
+  font: 9px var(--mono);
   color: #aaa;
+  margin: 8px 4px 0;
+  position: relative;
   line-height: 1.5;
-}
-@media (prefers-reduced-motion: reduce) {
-  .garment-space:before {
-    transition: none;
-  }
-}
-[data-theme='light'] .signal-tag {
-  color: #666;
-}
-/* Chalk garments now need the stronger backdrop; washed black separates on its own. */
-[data-theme='light'] .garment-space:before {
-  background: radial-gradient(
-    ellipse at 50% 47%,
-    #d2d1cb 0%,
-    #d9d8d2 29%,
-    #e5e4df 49%,
-    rgba(243, 242, 238, 0) 73%
-  );
-}
-[data-theme='light'] .garment-space:has(.concept-tee.dark):before {
-  background: radial-gradient(
-    ellipse at 50% 47%,
-    #e3e2dd 0%,
-    #e9e8e3 35%,
-    rgba(243, 242, 238, 0) 70%
-  );
 }
 [data-theme='light'] .piece-caption {
   border-top-color: rgba(0, 0, 0, 0.14);
@@ -457,20 +437,27 @@ dialog::backdrop {
   color: #5c5c5c;
 }
 
-/* Footer and concept bag */
-.field-footer {
-  padding: 50px var(--gutter) 30px;
-  border-top: 1px solid #333;
+/* Dialogs and the concept bag */
+dialog {
+  border: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  width: min(1160px, calc(100% - 64px));
+  max-height: 90svh;
+}
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.75);
+}
+[data-theme='light'] dialog::backdrop {
+  background: rgba(20, 20, 20, 0.38);
+}
+.detail-bar {
   display: flex;
   justify-content: space-between;
-  gap: 25px;
-  font: 10px/1.6 var(--mono);
-  color: #888;
-}
-.field-footer a {
-  color: #ddd;
-  text-decoration: underline;
-  text-underline-offset: 4px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--rule);
+  align-items: center;
 }
 .bag-items {
   padding: 25px;
@@ -484,36 +471,10 @@ dialog::backdrop {
   padding: 18px 0;
   border-bottom: 1px solid #333;
   font-size: 14px;
-}
-.bag-note {
-  padding: 0 25px 25px;
-  color: #999;
-  font-size: 12px;
-}
-.bag-open {
-  font: 11px var(--mono);
-}
-@media (max-width: 700px) {
-  .field-footer {
-    flex-direction: column;
-    padding-bottom: 40px;
-  }
-}
-[data-theme='light'] .field-footer {
-  border-top-color: var(--rule);
-  color: var(--muted);
-}
-[data-theme='light'] .field-footer a {
-  color: #222;
+  align-items: center;
 }
 [data-theme='light'] .bag-row {
   border-bottom-color: var(--rule);
-}
-[data-theme='light'] .bag-note {
-  color: var(--muted);
-}
-.bag-row {
-  align-items: center;
 }
 .bag-row a {
   flex: 1;
@@ -545,17 +506,18 @@ dialog::backdrop {
   justify-content: space-between;
   padding-top: 18px;
 }
-@media (max-width: 700px) {
-  .bag-row {
-    flex-wrap: wrap;
-    gap: 12px 20px;
-  }
-  .bag-row a {
-    flex-basis: 100%;
-  }
+.bag-note {
+  padding: 0 25px 25px;
+  color: #999;
+  font-size: 12px;
 }
-/* A brief radar ping on the bag counter when a piece is added. */
+[data-theme='light'] .bag-note {
+  color: var(--muted);
+}
+/* The header's bag button, which gives a brief radar ping when a piece is
+   added. */
 .bag-open {
+  font: 11px var(--mono);
   position: relative;
 }
 .bag-open.pinged:after {
@@ -585,8 +547,54 @@ dialog::backdrop {
     animation: none;
   }
 }
+@media (max-width: 700px) {
+  .detail-bar {
+    padding: 16px;
+  }
+  dialog {
+    width: calc(100% - 24px);
+    max-height: 92svh;
+  }
+  .bag-row {
+    flex-wrap: wrap;
+    gap: 12px 20px;
+  }
+  .bag-row a {
+    flex-basis: 100%;
+  }
+}
 
-/* Page to page: the clicked garment morphs into the product stage (cross-document view transitions). */
+/* Footer */
+.field-footer {
+  padding: 50px var(--gutter) 30px;
+  border-top: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  gap: 25px;
+  font: 10px/1.6 var(--mono);
+  color: #888;
+}
+.field-footer a {
+  color: #ddd;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+[data-theme='light'] .field-footer {
+  border-top-color: var(--rule);
+  color: var(--muted);
+}
+[data-theme='light'] .field-footer a {
+  color: #222;
+}
+@media (max-width: 700px) {
+  .field-footer {
+    flex-direction: column;
+    padding-bottom: 40px;
+  }
+}
+
+/* Page to page: the clicked garment morphs into the product stage
+   (cross-document view transitions). */
 @view-transition {
   navigation: auto;
 }
@@ -600,42 +608,7 @@ dialog::backdrop {
   }
 }
 
-/* Utilities and the breadcrumb used by the product and catalogue pages. */
-[hidden] {
-  display: none !important;
-}
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-.crumb {
-  grid-column: 1;
-  grid-row: 1;
-  justify-self: start;
-  font: 11px var(--mono);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 10px 0;
-}
-.crumb:hover {
-  opacity: 0.6;
-}
-@media (max-width: 700px) {
-  .crumb {
-    font-size: 10px;
-  }
-  .crumb-trail {
-    display: none;
-  }
-}
-.nav a[aria-current='page'] {
-  text-decoration: underline;
-  text-underline-offset: 5px;
-}
+/* Development: marks stress-test data (core/dev-tools.js). */
 .stress-badge {
   position: fixed;
   left: 12px;
@@ -659,7 +632,8 @@ dialog::backdrop {
   text-transform: inherit;
 }
 
-/* Data couldn't be loaded: a calm explanation and a retry, in place of the missing content. */
+/* Data couldn't be loaded: a calm explanation and a retry, in place of the
+   missing content (showLoadError() in core/data.js). */
 .load-error {
   grid-column: 1/-1;
   min-height: 40svh;
@@ -669,6 +643,9 @@ dialog::backdrop {
   align-items: flex-start;
   gap: 12px;
   padding: 40px var(--gutter);
+}
+.wrap .load-error {
+  padding-inline: 0;
 }
 .load-error h2 {
   font-size: clamp(28px, 3.4vw, 48px);
@@ -690,7 +667,4 @@ dialog::backdrop {
 .load-retry:hover {
   background: var(--ink);
   color: var(--paper);
-}
-.wrap .load-error {
-  padding-inline: 0;
 }
