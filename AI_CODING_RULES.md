@@ -39,12 +39,13 @@ New files go in the folder above that matches their role; never in the repo root
   - documents at the top what it defines, what it depends on, and its load order;
   - receives what it needs from its caller explicitly (a `mount({ ... })`-style options object), documented with one line per option, instead of reaching into another file's variables.
 - `shared.js` is the exception: its top-level names (`esc`, `pad`, `art`, `money`, `radarData`, `bag`, `tones`…) are deliberate globals used by every page. Rename one only together with every user.
-- Load order in each page: `shared.js` → shared modules (`radar.js`) → page modules (`catalogue-field.js`; `product-lock.js`, `product-media.js`, `product-sizes.js`) → the page script (`catalogue.js`, `product.js`).
+- Load order in each page: `shared.js` → shared modules (`radar.js`) → page modules (`home-*.js`, `catalogue-field.js`, `product-*.js`) → the page script (`home.js`, `catalogue.js`, `product.js`).
+- No inline `<script>` blocks in pages, except the one-line theme setter in `<head>` (it must run before first paint).
 - A page module that owns a piece of the page's HTML exposes `markup(...)` (returning that HTML) alongside `mount(...)`; the page script assembles the layout from those parts, then mounts each module.
 - Naming: page modules are `<page>-<feature>.js` and define `<page><Feature>` (`product-media.js` → `productMedia`).
 - Page scripts wrap their code in an `(async () => { ... })()` so their names stay local.
 - Before adding a global, search `site/` for the name: two classic scripts declaring the same top-level `const` stop the page loading.
-- Adding a script to a page means adding its `<script>` tag (with the current `?v=`), and to `tools/export.py` if the homepage uses it.
+- Adding a script to a page means adding its `<script>` tag (with the current `?v=`). `tools/export.py` inlines every `scripts/*.js` tag in `index.html` automatically; run it afterwards to confirm. A script must never contain the text `</script` (it would end the inlined block).
 
 ## 4. Code style
 

@@ -15,7 +15,7 @@ Summaries leave out the long text (description, status); only piece files carry 
 from pathlib import Path
 import json
 
-RAIL_LIMIT = 12  # keep in step with RAIL_LIMIT in index.html
+RAIL_LIMIT = 12  # keep in step with RAIL_LIMIT in site/scripts/home-collections.js
 DETAIL_ONLY = ('description', 'status', 'media')
 MAX_MEDIA = 8
 MAX_VIDEO_MB = 8

@@ -10,8 +10,19 @@ html = (root / 'index.html').read_text()
 for sheet in ('styles/shared.css', 'styles/collections.css'):
     html, found = re.subn(r'<link rel="stylesheet" href="' + re.escape(sheet) + r'(\?v=[^"]*)?">', lambda m, s=sheet: '<style>' + (root / s).read_text() + '</style>', html)
     assert found == 1, sheet
-html, found = re.subn(r'<script src="scripts/shared\.js(\?v=[^"]*)?"></script>', lambda m: '<script>' + (root / 'scripts' / 'shared.js').read_text() + '</script>', html)
-assert found == 1, 'shared.js'
+# Inline every script the homepage loads (shared.js, radar.js, the home-*.js modules), keeping their order.
+scripts = []
+
+
+def inline_script(match):
+    scripts.append(match.group(1))
+    source = (root / match.group(1)).read_text()
+    assert '</script' not in source, match.group(1) + ' would end the inline <script> early'
+    return '<script>' + source + '</script>'
+
+
+html = re.sub(r'<script src="(scripts/[a-z-]+\.js)(\?v=[^"]*)?"></script>', inline_script, html)
+assert scripts and scripts[0] == 'scripts/shared.js', 'shared.js must be the first script: ' + str(scripts)
 # Product pages are separate files; the portable homepage links to them relative to this folder.
 logo = 'radar-logo-updated.png'
 logo_url = 'data:image/png;base64,' + base64.b64encode((root / 'assets' / logo).read_bytes()).decode()
