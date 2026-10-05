@@ -118,7 +118,14 @@ export default [
   js.configs.recommended,
   {
     plugins: { jsdoc },
-    settings: { jsdoc: { mode: 'closure' } },
+    // Google style uses Closure Compiler's JSDoc dialect.
+    settings: {
+      jsdoc: {
+        mode: 'closure',
+        tagNamePreference: { file: 'fileoverview', constant: 'const' },
+        preferredTypes: { object: 'Object' },
+      },
+    },
   },
   {
     // Browser code: classic scripts (not ES modules, so pages also work from

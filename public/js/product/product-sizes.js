@@ -14,8 +14,12 @@ const productSizes = (() => {
   const FIRST_TAB_STOP = 2; // M takes focus first when tabbing into the rings
   const ADDED_MS = 1600; // how long "Added" shows before the button offers "Add another"
 
-  const buttonContent = (label, mark) => `<span>${label}</span><span aria-hidden="true">${mark}</span>`;
+  const buttonContent = (label, mark) =>
+    `<span>${label}</span><span aria-hidden="true">${mark}</span>`;
 
+  /**
+   *
+   */
   function markup() {
     const rings = SIZES.map(([size, chest], i) => {
       const d = 40 + i * 36; // ring diameter in px
@@ -37,6 +41,12 @@ const productSizes = (() => {
   }
 
   // Wire up the picker inside `root` (the element containing markup()) for `piece`.
+  /**
+   *
+   * @param root0
+   * @param root0.root
+   * @param root0.piece
+   */
   function mount({ root, piece }) {
     const ringButtons = [...root.querySelectorAll('.size-ring')];
     const sizeValue = root.querySelector('.size-value');
@@ -45,6 +55,11 @@ const productSizes = (() => {
     let chosen = '';
     let addedTimer = 0;
 
+    /**
+     *
+     * @param button
+     * @param focus
+     */
     function choose(button, focus) {
       chosen = button.dataset.size;
       ringButtons.forEach(b => {
@@ -56,14 +71,19 @@ const productSizes = (() => {
       sizeValue.textContent = `${chosen} / ${button.dataset.chest} cm chest`;
       add.disabled = false;
       clearTimeout(addedTimer);
-      add.innerHTML = buttonContent('Add to bag / ' + chosen, '↗');
+      add.innerHTML = buttonContent(`Add to bag / ${chosen}`, '↗');
     }
 
     // Radio-group keys: arrows step between sizes (up and right go larger), Home and End jump to the ends.
     ringButtons.forEach((button, i) => {
       button.addEventListener('click', () => choose(button, false));
       button.addEventListener('keydown', event => {
-        const step = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1 }[event.key];
+        const step = {
+          ArrowUp: 1,
+          ArrowRight: 1,
+          ArrowDown: -1,
+          ArrowLeft: -1,
+        }[event.key];
         const last = ringButtons.length - 1;
         const target = step
           ? ringButtons[clamp(i + step, 0, last)]
@@ -83,7 +103,7 @@ const productSizes = (() => {
       if (!chosen) return;
       bag.add(piece, chosen);
       status.textContent = `${piece.name}, size ${chosen}, added to the concept bag.`;
-      add.innerHTML = buttonContent('Added / ' + chosen, '✓');
+      add.innerHTML = buttonContent(`Added / ${chosen}`, '✓');
       // Ping the header's bag button.
       document.querySelectorAll('.bag-open').forEach(b => {
         b.classList.remove('pinged');
@@ -92,12 +112,14 @@ const productSizes = (() => {
       });
       clearTimeout(addedTimer);
       addedTimer = setTimeout(() => {
-        add.innerHTML = buttonContent('Add another / ' + chosen, '↗');
+        add.innerHTML = buttonContent(`Add another / ${chosen}`, '↗');
       }, ADDED_MS);
     });
     document
       .querySelectorAll('.bag-open')
-      .forEach(b => b.addEventListener('animationend', () => b.classList.remove('pinged')));
+      .forEach(b =>
+        b.addEventListener('animationend', () => b.classList.remove('pinged')),
+      );
   }
 
   return { markup, mount };

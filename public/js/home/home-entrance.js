@@ -11,6 +11,13 @@ const homeEntrance = (() => {
   const RING_RADII = [56, 126, 196, 266, 336, 406, 476];
 
   // Start the radar on `canvas`, sized to `section` (the entrance). motion: the prefers-reduced-motion query.
+  /**
+   *
+   * @param root0
+   * @param root0.section
+   * @param root0.canvas
+   * @param root0.motion
+   */
   function mount({ section, canvas, motion }) {
     const context = canvas.getContext('2d');
     const base = document.createElement('canvas');
@@ -33,6 +40,9 @@ const homeEntrance = (() => {
       sync();
     }).observe(section);
 
+    /**
+     *
+     */
     function resize() {
       const rect = section.getBoundingClientRect();
       width = rect.width;
@@ -40,7 +50,11 @@ const homeEntrance = (() => {
       const small = width < 700;
       const cellWidth = small ? 6 : 7;
       const cellHeight = small ? 9 : 10;
-      radar.size([canvas, base], width, height, (small ? 10 : 11) + 'px monospace');
+      radar.size([canvas, base], {
+        width,
+        height,
+        font: `${small ? 10 : 11}px monospace`,
+      });
       cells = [];
       ringPoints = [];
       const scale = (Math.max(width, height) * 1.58) / 1000;
@@ -80,6 +94,9 @@ const homeEntrance = (() => {
     }
 
     // The static grid and rings are cached, then repainted when the theme changes.
+    /**
+     *
+     */
     function paintBase() {
       baseContext.clearRect(0, 0, width, height);
       for (const cell of cells) {
@@ -88,20 +105,31 @@ const homeEntrance = (() => {
         baseContext.fillText(cell.glyph, cell.x, cell.y);
       }
       baseContext.fillStyle = tones[59];
-      for (const point of ringPoints) baseContext.fillText('.', point.x, point.y);
+      for (const point of ringPoints) {
+        baseContext.fillText('.', point.x, point.y);
+      }
     }
 
+    /**
+     *
+     */
     function drawAngle() {
       canvas.dataset.scanAngle = angle.toFixed(2);
       canvas.dataset.scanSpeed = speed.toFixed(1);
       paint(performance.now());
     }
 
+    /**
+     *
+     * @param now
+     */
     function paint(now) {
-      if (!width || (!motion.matches && now - lastPaint < radar.FRAME_MS)) return;
+      if (!width || (!motion.matches && now - lastPaint < radar.FRAME_MS)) {
+        return;
+      }
       const dt = Math.min((now - lastPaint) / 1000, 0.05);
       lastPaint = now;
-      radar.drawBase(context, base, width, height);
+      radar.drawBase(context, base, { width, height });
       const radians = (angle * Math.PI) / 180;
       const decay = Math.exp(-dt / 0.85);
       let sweptCells = 0;
@@ -110,27 +138,39 @@ const homeEntrance = (() => {
         // Every cell in the broad sweep is drawn. Character weight and brightness form the gradient;
         // texture never removes cells or changes the structure.
         const lag = radar.lag(cell.theta, radians);
-        const strength = lag < SWEEP_WIDTH ? Math.pow(1 - lag / SWEEP_WIDTH, 1.55) : 0;
-        cell.echo = Math.max(cell.echo * decay, strength > 0 ? 0.06 + strength * 0.14 : 0);
+        const strength =
+          lag < SWEEP_WIDTH ? Math.pow(1 - lag / SWEEP_WIDTH, 1.55) : 0;
+        cell.echo = Math.max(
+          cell.echo * decay,
+          strength > 0 ? 0.06 + strength * 0.14 : 0,
+        );
         if (!strength && cell.echo < 0.006) continue;
         if (strength) sweptCells++;
         else afterglowCells++;
         const shimmer = 1 + Math.sin(now * 0.0018 + cell.seed * 0.17) * 0.055;
         const brightness = Math.max(strength, cell.echo) * shimmer;
         context.fillStyle = tones[Math.round(13 + brightness * 77)];
-        context.fillText(cell.glyph || radar.sweepGlyph(brightness), cell.x, cell.y);
+        context.fillText(
+          cell.glyph || radar.sweepGlyph(brightness),
+          cell.x,
+          cell.y,
+        );
       }
       // Ring dots brighten as the sweep passes over them.
       for (const point of ringPoints) {
         const lag = radar.lag(point.theta, radians);
         if (lag >= SWEEP_WIDTH) continue;
-        context.fillStyle = tones[Math.round(59 + Math.pow(1 - lag / SWEEP_WIDTH, 1.55) * 30)];
+        context.fillStyle =
+          tones[Math.round(59 + Math.pow(1 - lag / SWEEP_WIDTH, 1.55) * 30)];
         context.fillText('.', point.x, point.y);
       }
       canvas.dataset.sweptCells = String(sweptCells);
       canvas.dataset.afterglowCells = String(afterglowCells);
     }
 
+    /**
+     *
+     */
     function repaint() {
       paintBase();
       lastPaint = 0;
@@ -151,14 +191,27 @@ const homeEntrance = (() => {
       },
       () => visible && !document.hidden && !motion.matches,
     );
+    /**
+     *
+     */
     function sync() {
       if (animation.sync()) lastTime = performance.now();
     }
 
+    /**
+     *
+     * @param amount
+     */
     function accelerate(amount) {
-      if (visible && !motion.matches) boost = Math.min(MAX_BOOST, Math.max(boost, amount));
+      if (visible && !motion.matches) {
+        boost = Math.min(MAX_BOOST, Math.max(boost, amount));
+      }
     }
-    addEventListener('wheel', event => accelerate(Math.abs(event.deltaY) * 0.65), { passive: true });
+    addEventListener(
+      'wheel',
+      event => accelerate(Math.abs(event.deltaY) * 0.65),
+      { passive: true },
+    );
     addEventListener(
       'scroll',
       () => {

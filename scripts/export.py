@@ -10,19 +10,6 @@ html = (root / 'index.html').read_text()
 for sheet in ('css/shared.css', 'css/collections.css'):
     html, found = re.subn(r'<link rel="stylesheet" href="' + re.escape(sheet) + r'(\?v=[^"]*)?">', lambda m, s=sheet: '<style>' + (root / s).read_text() + '</style>', html)
     assert found == 1, sheet
-# Inline every script the homepage loads (shared.js, radar.js, the home-*.js modules), keeping their order.
-scripts = []
-
-
-def inline_script(match):
-    scripts.append(match.group(1))
-    source = (root / match.group(1)).read_text()
-    assert '</script' not in source, match.group(1) + ' would end the inline <script> early'
-    return '<script>' + source + '</script>'
-
-
-html = re.sub(r'<script src="(js/[a-z/-]+\.js)(\?v=[^"]*)?"></script>', inline_script, html)
-assert scripts and scripts[0] == 'js/core/shared.js', 'shared.js must be the first script: ' + str(scripts)
 # Product pages are separate files; the portable homepage links to them relative to this folder.
 logo = 'radar-logo-updated.png'
 logo_url = 'data:image/png;base64,' + base64.b64encode((root / 'assets' / logo).read_bytes()).decode()
@@ -32,7 +19,7 @@ home_path = root / 'data' / 'home.json'
 assert home_path.exists(), 'data/home.json missing: run python3 scripts/build_data.py'
 home = json.loads(home_path.read_text())
 # Artwork: inline the 640px JPEG thumbnail of each featured image (build_images.py), not the full-size original.
-# shared.js's art() switches to these when `assetUrls` is defined.
+# js/core/artwork.js's art() switches to these when `assetUrls` is defined.
 urls = {}
 for name in sorted({p['image'] for p in home['products']}):
     if name.startswith('https://cdn.shopify.com/'):  # artwork only on Shopify's CDN: link the 640px version
@@ -43,8 +30,20 @@ for name in sorted({p['image'] for p in home['products']}):
     urls[name] = 'data:image/jpeg;base64,' + base64.b64encode(thumbnail.read_bytes()).decode()
 embedded = ('<script>window.radarInlineData=' + json.dumps({'data/home.json': home}, ensure_ascii=False, separators=(',', ':'))
             + ';window.assetUrls=' + json.dumps(urls) + ';</script>\n')
-html, found = re.subn(r'(<script>// Shared by every RADAR page)', lambda m: embedded + m.group(1), html)
-assert found == 1, 'shared.js inline marker'
+# Inline every script the homepage loads (js/core/*, js/home/*), keeping their order. The embedded data goes
+# immediately before the first one, so it exists before any script runs.
+scripts = []
+
+
+def inline_script(match):
+    scripts.append(match.group(1))
+    source = (root / match.group(1)).read_text()
+    assert '</script' not in source, match.group(1) + ' would end the inline <script> early'
+    return (embedded if len(scripts) == 1 else '') + '<script>' + source + '</script>'
+
+
+html = re.sub(r'<script src="(js/[a-z/-]+\.js)(\?v=[^"]*)?"></script>', inline_script, html)
+assert scripts, 'no scripts found in index.html'
 output = root / 'RADAR-Gallery-to-Archive.html'
 output.write_text(html)
 print(f'Exported {output.name} ({output.stat().st_size / 1024 / 1024:.1f} MB)')

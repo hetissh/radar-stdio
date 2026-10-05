@@ -18,6 +18,16 @@ const productLock = (() => {
   //   bearing  the piece's bearing in degrees (where the sweep locks)
   //   number   the piece's number within its collection, for the readout
   //   motion   the prefers-reduced-motion media query (reduced motion: the locked state, no animation)
+  /**
+   *
+   * @param root0
+   * @param root0.stage
+   * @param root0.centre
+   * @param root0.art
+   * @param root0.bearing
+   * @param root0.number
+   * @param root0.motion
+   */
   function mount({ stage, centre, art, bearing, number, motion }) {
     const canvas = stage.querySelector('.lock-field');
     const ctx = canvas.getContext('2d');
@@ -36,20 +46,31 @@ const productLock = (() => {
     let visible = true;
     let lastLabel = '';
 
+    /**
+     *
+     */
     function resize() {
       const rect = stage.getBoundingClientRect();
       const target = centre.getBoundingClientRect();
       width = rect.width;
       height = rect.height;
-      radar.size([canvas, base], width, height);
+      radar.size([canvas, base], { width, height });
       cx = target.left + target.width / 2 - rect.left;
       cy = target.top + target.height / 2 - rect.top;
       reticle = Math.max(target.width, target.height) * 0.6;
       const rx = target.width * 0.6;
       const ry = target.height * 0.6;
       cells = [];
-      for (let col = -Math.ceil(cx / CELL_W); col <= Math.ceil((width - cx) / CELL_W); col++) {
-        for (let row = -Math.ceil(cy / CELL_H); row <= Math.ceil((height - cy) / CELL_H); row++) {
+      for (
+        let col = -Math.ceil(cx / CELL_W);
+        col <= Math.ceil((width - cx) / CELL_W);
+        col++
+      ) {
+        for (
+          let row = -Math.ceil(cy / CELL_H);
+          row <= Math.ceil((height - cy) / CELL_H);
+          row++
+        ) {
           const x = cx + col * CELL_W;
           const y = cy + row * CELL_H;
           cells.push({
@@ -67,50 +88,88 @@ const productLock = (() => {
       repaint();
     }
 
+    /**
+     *
+     */
     function paintBase() {
       baseCtx.clearRect(0, 0, width, height);
       for (const cell of cells) {
         if (!cell.glyph) continue;
-        baseCtx.fillStyle = tones[Math.round((cell.axis ? 34 : 17) * cell.quiet)];
+        baseCtx.fillStyle =
+          tones[Math.round((cell.axis ? 34 : 17) * cell.quiet)];
         baseCtx.fillText(cell.glyph, cell.x, cell.y);
       }
       baseCtx.fillStyle = tones[30];
-      radar.ringDots(baseCtx, cx, cy, reticle * 1.55, 7, 12);
+      radar.ringDots(baseCtx, {
+        cx,
+        cy,
+        radius: reticle * 1.55,
+        spacing: 7,
+        minDots: 12,
+      });
       baseCtx.fillStyle = tones[22];
-      radar.ringDots(baseCtx, cx, cy, reticle * 2.2, 7, 12);
+      radar.ringDots(baseCtx, {
+        cx,
+        cy,
+        radius: reticle * 2.2,
+        spacing: 7,
+        minDots: 12,
+      });
     }
 
+    /**
+     *
+     * @param now
+     */
     function paint(now) {
-      if (!width || (!motion.matches && now - lastPaint < radar.FRAME_MS)) return;
+      if (!width || (!motion.matches && now - lastPaint < radar.FRAME_MS)) {
+        return;
+      }
       const dt = Math.min((now - lastPaint) / 1000, 0.05);
       lastPaint = now;
       const t = motion.matches ? 99 : (now - start) / 1000; // seconds since the page opened
       const scan = clamp(t / SCAN_S, 0, 1);
       // Two and a quarter turns that decelerate onto the bearing, then a slow, dim idle sweep.
       const angle =
-        t < SCAN_S ? lockAngle + radar.TAU * 2.25 * (1 - easeOut(scan)) : lockAngle - (t - SCAN_S) * 0.3;
-      const intensity = motion.matches ? 0 : t < SCAN_S ? 1 : Math.max(0.3, 1 - (t - SCAN_S) * 0.7);
+        t < SCAN_S
+          ? lockAngle + radar.TAU * 2.25 * (1 - easeOut(scan))
+          : lockAngle - (t - SCAN_S) * 0.3;
+      const intensity = motion.matches
+        ? 0
+        : t < SCAN_S
+          ? 1
+          : Math.max(0.3, 1 - (t - SCAN_S) * 0.7);
       const lock = easeOut(clamp((t - 1.1) / 0.9, 0, 1)); // 0 → 1 as the reticle closes in
       const decay = Math.exp(-dt / 0.85);
-      radar.drawBase(ctx, base, width, height);
+      radar.drawBase(ctx, base, { width, height });
       for (const cell of cells) {
         const lag = radar.lag(cell.theta, angle);
-        const strength = lag < SWEEP_WIDTH ? Math.pow(1 - lag / SWEEP_WIDTH, 1.55) * intensity : 0;
-        cell.echo = Math.max(cell.echo * decay, strength > 0 ? 0.05 + strength * 0.12 : 0);
+        const strength =
+          lag < SWEEP_WIDTH
+            ? Math.pow(1 - lag / SWEEP_WIDTH, 1.55) * intensity
+            : 0;
+        cell.echo = Math.max(
+          cell.echo * decay,
+          strength > 0 ? 0.05 + strength * 0.12 : 0,
+        );
         const brightness = Math.max(strength, cell.echo);
         if (brightness < 0.01) continue;
         const shade = Math.round((13 + brightness * 77) * cell.quiet);
         if (shade < 3) continue;
         ctx.fillStyle = tones[shade];
-        ctx.fillText(cell.glyph || radar.sweepGlyph(brightness), cell.x, cell.y);
+        ctx.fillText(
+          cell.glyph || radar.sweepGlyph(brightness),
+          cell.x,
+          cell.y,
+        );
       }
       paintReticle(lock);
       const label =
         t < SCAN_S
-          ? 'Scanning ' + pad(Math.round(scan * 100), 3) + '%'
+          ? `Scanning ${pad(Math.round(scan * 100), 3)}%`
           : t < LOCKED_S
             ? 'Locking'
-            : 'Signal locked / ' + number;
+            : `Signal locked / ${number}`;
       if (label !== lastLabel) {
         stateLabel.textContent = label;
         lastLabel = label;
@@ -119,10 +178,14 @@ const productLock = (() => {
     }
 
     // The reticle closes in from a wide ring onto the garment, then a beam of dots marks the piece's bearing.
+    /**
+     *
+     * @param lock
+     */
     function paintReticle(lock) {
       const r = reticle * (1 + 1.6 * (1 - lock));
       ctx.fillStyle = tones[Math.round(30 + 48 * lock)];
-      radar.ringDots(ctx, cx, cy, r, 7, 12);
+      radar.ringDots(ctx, { cx, cy, radius: r, spacing: 7, minDots: 12 });
       // Tick marks at the four compass points, fading outwards.
       for (let k = 0; k < 4; k++) {
         const a = (k * radar.TAU) / 4;
@@ -145,13 +208,22 @@ const productLock = (() => {
       }
     }
 
+    /**
+     *
+     */
     function repaint() {
       paintBase();
       lastPaint = 0;
       paint(performance.now());
     }
 
-    const animation = radar.loop(paint, () => visible && !document.hidden && !motion.matches);
+    const animation = radar.loop(
+      paint,
+      () => visible && !document.hidden && !motion.matches,
+    );
+    /**
+     *
+     */
     function sync() {
       if (!animation.sync()) {
         lastPaint = 0;

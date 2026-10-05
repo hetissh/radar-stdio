@@ -15,6 +15,10 @@ const homeCollections = (() => {
   // A rail shows up to RAIL_LIMIT featured pieces in curated order; a larger collection ends with a "View all"
   // card that opens the catalogue filtered to it. home.json carries only the featured pieces, so the
   // collection's full size comes from its count.
+  /**
+   *
+   * @param i
+   */
   function railCards(i) {
     const c = collectionData[i];
     const total = c.count;
@@ -22,7 +26,9 @@ const homeCollections = (() => {
       .filter(p => p.collection === i)
       .sort((x, y) => x.position - y.position)
       .slice(0, RAIL_LIMIT);
-    if (!total) return '<p class="rail-empty mono">No pieces on this orbit yet</p>';
+    if (!total) {
+      return '<p class="rail-empty mono">No pieces on this orbit yet</p>';
+    }
     const more =
       total > shown.length
         ? `<a class="product-card rail-more" href="catalogue.html?collection=${esc(c.id)}" ` +
@@ -35,6 +41,9 @@ const homeCollections = (() => {
     return shown.map(productCard).join('') + more;
   }
 
+  /**
+   *
+   */
   function markup() {
     return collectionData
       .map(
@@ -56,6 +65,13 @@ const homeCollections = (() => {
   //   sections  the collection <section> elements, by collection index
   //   motion    the prefers-reduced-motion media query (no auto-scan, no animation)
   //   onSync(active)  called after every scroll sync with the collection index in view, or -1
+  /**
+   *
+   * @param root0
+   * @param root0.sections
+   * @param root0.motion
+   * @param root0.onSync
+   */
   function mount({ sections, motion, onSync }) {
     // One model per collection: its elements, canvas geometry and the field's points.
     const fields = sections.map((section, i) => {
@@ -83,12 +99,16 @@ const homeCollections = (() => {
 
     // ---------- Geometry ----------
 
+    /**
+     *
+     * @param model
+     */
     function resizeField(model) {
       const rect = model.canvas.getBoundingClientRect();
       const { width, height } = rect;
       model.width = width;
       model.height = height;
-      radar.size([model.canvas], width, height, '10px monospace');
+      radar.size([model.canvas], { width, height, font: '10px monospace' });
       model.points = [];
       model.ringPoints = [];
       // The orbit is a circle far below the stage; its top edge forms the arc the cards ride.
@@ -103,7 +123,12 @@ const homeCollections = (() => {
       model.canvas.dataset.orbitCenterY = centerY;
       for (let y = 6; y < height; y += 16) {
         for (let x = 7; x < width; x += 14) {
-          model.points.push({ x, y, theta: Math.atan2(y - centerY, x - width / 2), echo: 0 });
+          model.points.push({
+            x,
+            y,
+            theta: Math.atan2(y - centerY, x - width / 2),
+            echo: 0,
+          });
         }
       }
       const spacing = clamp(height * 0.16, 65, 110);
@@ -113,7 +138,9 @@ const homeCollections = (() => {
         for (let angle = -extent; angle <= extent; angle += 7 / r) {
           const x = width / 2 + r * Math.sin(angle);
           const y = centerY - r * Math.cos(angle);
-          if (y > 0 && y < height) model.ringPoints.push({ x, y, primary: r === radius });
+          if (y > 0 && y < height) {
+            model.ringPoints.push({ x, y, primary: r === radius });
+          }
         }
       }
       layoutCards(model);
@@ -121,24 +148,48 @@ const homeCollections = (() => {
     }
 
     // The arc's height at a horizontal offset from the rail's centre.
+    /**
+     *
+     * @param model
+     * @param offset
+     */
     function orbitY(model, offset) {
-      const radius = model.radius || Math.max(model.rail.clientWidth * 0.9, 500);
+      const radius =
+        model.radius || Math.max(model.rail.clientWidth * 0.9, 500);
       const limit = Math.min(radius * 0.98, model.rail.clientWidth / 2 + 32);
       const x = clamp(offset, -limit, limit);
       return (
-        (model.arcBaseline ?? model.rail.clientHeight * 0.43) + radius - Math.sqrt(radius * radius - x * x)
+        (model.arcBaseline ?? model.rail.clientHeight * 0.43) +
+        radius -
+        Math.sqrt(radius * radius - x * x)
       );
     }
 
     // How visible a field point is: 0 under a card's caption, fading towards 1 away from its garment.
+    /**
+     *
+     * @param point
+     * @param zones
+     */
     function fieldQuietness(point, zones) {
       let quietness = 1;
       for (const zone of zones) {
-        if (point.x >= zone.left && point.x <= zone.right && point.y >= zone.top && point.y <= zone.bottom)
+        if (
+          point.x >= zone.left &&
+          point.x <= zone.right &&
+          point.y >= zone.top &&
+          point.y <= zone.bottom
+        ) {
           return 0;
+        }
         quietness = Math.min(
           quietness,
-          radar.fade(Math.hypot((point.x - zone.x) / zone.rx, (point.y - zone.y) / zone.ry)),
+          radar.fade(
+            Math.hypot(
+              (point.x - zone.x) / zone.rx,
+              (point.y - zone.y) / zone.ry,
+            ),
+          ),
         );
       }
       return quietness;
@@ -148,6 +199,10 @@ const homeCollections = (() => {
 
     // Place each card on the arc (raised, scaled and dimmed by its distance from the centre), track the card in
     // focus, and cache where the cards are so the canvas can fade under them.
+    /**
+     *
+     * @param model
+     */
     function layoutCards(model) {
       const layoutStart = performance.now();
       const counter = model.section.querySelector('.field-counter');
@@ -170,17 +225,31 @@ const homeCollections = (() => {
           closest = i;
         }
         const normalized = offset / Math.max(300, rail.clientWidth * 0.5);
-        const scale = motion.matches ? 1 : 1.025 - Math.min(0.095, Math.abs(normalized) * 0.05);
+        const scale = motion.matches
+          ? 1
+          : 1.025 - Math.min(0.095, Math.abs(normalized) * 0.05);
         const garment = card.querySelector('.garment-space');
-        const garmentOffset = garment.offsetTop + garment.offsetHeight / 2 - card.offsetHeight / 2;
+        const garmentOffset =
+          garment.offsetTop + garment.offsetHeight / 2 - card.offsetHeight / 2;
         const y = orbitY(model, offset);
         // Anchor the garment's centre, rather than the card (which includes its caption).
-        card.style.setProperty('--rise', y - rail.clientHeight / 2 - scale * garmentOffset + 'px');
+        card.style.setProperty(
+          '--rise',
+          `${y - rail.clientHeight / 2 - scale * garmentOffset}px`,
+        );
         card.style.setProperty('--scale', String(scale));
-        card.style.setProperty('--visibility', String(1 - Math.min(0.2, Math.abs(normalized) * 0.12)));
-        card.style.setProperty('--focus-light', String(1 - Math.min(0.3, Math.abs(normalized) * 0.2)));
+        card.style.setProperty(
+          '--visibility',
+          String(1 - Math.min(0.2, Math.abs(normalized) * 0.12)),
+        );
+        card.style.setProperty(
+          '--focus-light',
+          String(1 - Math.min(0.3, Math.abs(normalized) * 0.2)),
+        );
       });
-      if (closest !== model.focused) model.echoes.push({ index: model.focused, born: performance.now() });
+      if (closest !== model.focused) {
+        model.echoes.push({ index: model.focused, born: performance.now() });
+      }
       model.focused = closest;
       model.cards.forEach((card, i) => {
         if (card.classList.contains('rail-more')) return;
@@ -191,9 +260,13 @@ const homeCollections = (() => {
       const stage = model.canvas.getBoundingClientRect();
       const zones = [];
       model.cards.forEach(card => {
-        const garment = card.querySelector('.garment-space').getBoundingClientRect();
+        const garment = card
+          .querySelector('.garment-space')
+          .getBoundingClientRect();
         if (garment.right < stage.left || garment.left > stage.right) return;
-        const caption = card.querySelector('.piece-caption').getBoundingClientRect();
+        const caption = card
+          .querySelector('.piece-caption')
+          .getBoundingClientRect();
         const meta = card.querySelector('.piece-meta').getBoundingClientRect();
         zones.push({
           x: (garment.left + garment.right) / 2 - stage.left,
@@ -207,30 +280,52 @@ const homeCollections = (() => {
         });
       });
       model.foregroundZones = zones;
-      model.points.forEach(point => (point.quietness = fieldQuietness(point, zones)));
-      model.ringPoints.forEach(point => (point.quietness = fieldQuietness(point, zones)));
+      model.points.forEach(
+        point => (point.quietness = fieldQuietness(point, zones)),
+      );
+      model.ringPoints.forEach(
+        point => (point.quietness = fieldQuietness(point, zones)),
+      );
       // The counter counts pieces; a closing "View all" card is not one.
       const pieceCount =
-        model.cards.length - (model.cards[model.cards.length - 1].classList.contains('rail-more') ? 1 : 0);
-      counter.firstChild.textContent = pad(Math.min(closest + 1, pieceCount)) + ' / ' + pad(pieceCount);
-      counter.style.setProperty('--progress', (closest + 1) / model.cards.length);
+        model.cards.length -
+        (model.cards[model.cards.length - 1].classList.contains('rail-more')
+          ? 1
+          : 0);
+      counter.firstChild.textContent = `${pad(Math.min(closest + 1, pieceCount))} / ${pad(pieceCount)}`;
+      counter.style.setProperty(
+        '--progress',
+        (closest + 1) / model.cards.length,
+      );
       radarPerf?.record('rail layout', performance.now() - layoutStart);
     }
 
     // On scroll: find the collection in view, scan each rail to match page progress, and re-lay visible rails.
+    /**
+     *
+     */
     function syncCollections() {
       const pageMoved = Math.abs(scrollY - lastPageY) > 1;
       lastPageY = scrollY;
       let current = -1;
       fields.forEach(model => {
         const rect = model.section.getBoundingClientRect();
-        if (rect.top < innerHeight * 0.6 && rect.bottom > innerHeight * 0.5) current = model.index;
+        if (rect.top < innerHeight * 0.6 && rect.bottom > innerHeight * 0.5) {
+          current = model.index;
+        }
         // Scrolling the page hands the rail back to the automatic scan.
         if (pageMoved) model.manual = false;
         if (!model.manual && !motion.matches) {
-          const progress = clamp(-rect.top / Math.max(1, rect.height - innerHeight), 0, 1);
-          const goal = progress * (model.rail.scrollWidth - model.rail.clientWidth);
-          if (Math.abs(model.rail.scrollLeft - goal) > 1) model.rail.scrollLeft = goal;
+          const progress = clamp(
+            -rect.top / Math.max(1, rect.height - innerHeight),
+            0,
+            1,
+          );
+          const goal =
+            progress * (model.rail.scrollWidth - model.rail.clientWidth);
+          if (Math.abs(model.rail.scrollLeft - goal) > 1) {
+            model.rail.scrollLeft = goal;
+          }
         }
         if (rect.top < innerHeight && rect.bottom > 0) layoutCards(model);
       });
@@ -241,6 +336,12 @@ const homeCollections = (() => {
 
     // ---------- Field canvas ----------
 
+    /**
+     *
+     * @param model
+     * @param now
+     * @param dt
+     */
     function drawField(model, now, dt) {
       const ctx = model.context;
       const w = model.width;
@@ -249,11 +350,15 @@ const homeCollections = (() => {
       ctx.clearRect(0, 0, w, h);
       // The scan line travels left to right along the arc, wrapping around off-screen.
       const scanX = ((now * 0.045) % (w + 280)) - 140;
-      const theta = Math.atan2(model.arcBaseline - model.centerY, scanX - w / 2);
+      const theta = Math.atan2(
+        model.arcBaseline - model.centerY,
+        scanX - w / 2,
+      );
       const decay = Math.exp(-dt / 0.75);
       for (const point of model.points) {
         const lag = theta - point.theta;
-        const strength = lag > 0 && lag < 0.27 ? Math.pow(1 - lag / 0.27, 1.8) : 0;
+        const strength =
+          lag > 0 && lag < 0.27 ? Math.pow(1 - lag / 0.27, 1.8) : 0;
         point.echo = Math.max(point.echo * decay, strength * 0.13);
         const light = Math.max(strength, point.echo);
         if (light < 0.008) continue;
@@ -264,7 +369,10 @@ const homeCollections = (() => {
       }
       for (const point of model.ringPoints) {
         const brightness = clamp(1 - Math.abs(point.x - scanX) / 220, 0, 1);
-        const shade = Math.round(((point.primary ? 55 : 24) + brightness * 29) * (point.quietness ?? 1));
+        const shade = Math.round(
+          ((point.primary ? 55 : 24) + brightness * 29) *
+            (point.quietness ?? 1),
+        );
         if (shade < 3) continue;
         ctx.fillStyle = tones[shade];
         ctx.fillText('.', point.x, point.y);
@@ -272,7 +380,8 @@ const homeCollections = (() => {
       model.echoes = model.echoes.filter(e => now - e.born < ECHO_MS);
       for (const echo of model.echoes) {
         const card = model.cards[echo.index];
-        const x = card.offsetLeft + card.offsetWidth / 2 - model.rail.scrollLeft;
+        const x =
+          card.offsetLeft + card.offsetWidth / 2 - model.rail.scrollLeft;
         const y = orbitY(model, x - w / 2);
         const quietness = fieldQuietness({ x, y }, model.foregroundZones || []);
         ctx.fillStyle = `rgba(${echoInk},${(1 - (now - echo.born) / ECHO_MS) * 0.22 * quietness})`;
@@ -281,6 +390,10 @@ const homeCollections = (() => {
     }
 
     // Only the collection in view animates. With reduced motion it draws one frame per change.
+    /**
+     *
+     * @param now
+     */
     function fieldTick(now) {
       fieldFrame = 0;
       if (document.hidden || activeField < 0) return;
@@ -289,11 +402,17 @@ const homeCollections = (() => {
       drawField(fields[activeField], now, dt);
       if (!motion.matches) fieldFrame = requestAnimationFrame(fieldTick);
     }
+    /**
+     *
+     */
     function scheduleField() {
       if (fieldFrame || document.hidden || activeField < 0) return;
       lastFieldTime = performance.now();
       fieldFrame = requestAnimationFrame(fieldTick);
     }
+    /**
+     *
+     */
     function restartField() {
       if (fieldFrame) cancelAnimationFrame(fieldFrame);
       fieldFrame = 0;
@@ -303,12 +422,18 @@ const homeCollections = (() => {
 
     fields.forEach(model => {
       const rail = model.rail;
-      new ResizeObserver(() => resizeField(model)).observe(model.section.querySelector('.arc-stage'));
-      rail.addEventListener('scroll', () => layoutCards(model), { passive: true });
+      new ResizeObserver(() => resizeField(model)).observe(
+        model.section.querySelector('.arc-stage'),
+      );
+      rail.addEventListener('scroll', () => layoutCards(model), {
+        passive: true,
+      });
       rail.addEventListener(
         'wheel',
         event => {
-          if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) model.manual = true;
+          if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+            model.manual = true;
+          }
         },
         { passive: true },
       );
@@ -320,7 +445,12 @@ const homeCollections = (() => {
         event => {
           model.manual = true;
           if (event.pointerType === 'mouse') {
-            drag = { id: event.pointerId, x: event.clientX, left: rail.scrollLeft, moved: false };
+            drag = {
+              id: event.pointerId,
+              x: event.clientX,
+              left: rail.scrollLeft,
+              moved: false,
+            };
             suppressClick = false;
           }
         },
@@ -340,7 +470,9 @@ const homeCollections = (() => {
         }
       });
       const release = () => {
-        if (drag && rail.hasPointerCapture(drag.id)) rail.releasePointerCapture(drag.id);
+        if (drag && rail.hasPointerCapture(drag.id)) {
+          rail.releasePointerCapture(drag.id);
+        }
         drag = null;
       };
       rail.addEventListener('pointerup', release);
@@ -391,6 +523,9 @@ const homeCollections = (() => {
 
     // Returning from a product page (?piece=ID) lands with that piece in focus on its orbit.
     // The homepage only loads featured pieces; a piece beyond them lands on its rail's "View all" card.
+    /**
+     *
+     */
     function returnToPiece() {
       const params = new URLSearchParams(location.search);
       const piece = productById(params.get('piece') || '');
@@ -407,7 +542,11 @@ const homeCollections = (() => {
         if (!card) return;
         const rail = model.rail;
         const span = Math.max(1, rail.scrollWidth - rail.clientWidth);
-        const goal = clamp(card.offsetLeft + card.offsetWidth / 2 - rail.clientWidth / 2, 0, span);
+        const goal = clamp(
+          card.offsetLeft + card.offsetWidth / 2 - rail.clientWidth / 2,
+          0,
+          span,
+        );
         const top = model.section.getBoundingClientRect().top + scrollY;
         if (motion.matches) {
           scrollTo({ top, behavior: 'instant' });
@@ -416,11 +555,16 @@ const homeCollections = (() => {
         } else {
           // The page's scroll position drives the rail's scan, so scroll the page to where the scan shows the card.
           scrollTo({
-            top: top + (goal / span) * (model.section.offsetHeight - innerHeight),
+            top:
+              top + (goal / span) * (model.section.offsetHeight - innerHeight),
             behavior: 'instant',
           });
         }
-        history.replaceState(null, '', location.pathname + '#' + collectionData[ring].id);
+        history.replaceState(
+          null,
+          '',
+          `${location.pathname}#${collectionData[ring].id}`,
+        );
         syncCollections();
       });
     }

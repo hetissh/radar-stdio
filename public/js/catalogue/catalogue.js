@@ -36,7 +36,7 @@
       .toLowerCase();
   const collectionOf = p => collectionData[p.collection];
   const coord = p => `R${pad(p.collection + 1)} / ${bearingLabel(p)}°`;
-  const linkFor = p => productUrl(p) + '&from=catalogue';
+  const linkFor = p => `${productUrl(p)}&from=catalogue`;
 
   // ---------- State: filters, sort, search and view, mirrored in the URL ----------
 
@@ -55,7 +55,10 @@
     },
     artwork: {
       label: 'Artwork',
-      options: [['all', 'All'], ...[...new Set(products.map(p => p.category))].map(c => [slug(c), c])],
+      options: [
+        ['all', 'All'],
+        ...[...new Set(products.map(p => p.category))].map(c => [slug(c), c]),
+      ],
     },
   };
   const sorts = [
@@ -85,7 +88,9 @@
   if (views.includes(params.get('view'))) state.view = params.get('view');
   if (isOption(sorts, params.get('sort'))) state.sort = params.get('sort');
   state.q = (params.get('q') || '').trim().slice(0, SEARCH_MAX);
-  if (collectionData.some(c => c.id === params.get('ring'))) state.ring = params.get('ring');
+  if (collectionData.some(c => c.id === params.get('ring'))) {
+    state.ring = params.get('ring');
+  }
   // Set when coming back from a product page.
   const returning = productById(params.get('piece') || '');
 
@@ -93,7 +98,16 @@
   const haystack = new Map(
     products.map(p => [
       p,
-      fold([p.name, p.title, p.discipline, p.category, collectionOf(p).title, colourOf(p)].join(' ')),
+      fold(
+        [
+          p.name,
+          p.title,
+          p.discipline,
+          p.category,
+          collectionOf(p).title,
+          colourOf(p),
+        ].join(' '),
+      ),
     ]),
   );
   const matches = (p, words) =>
@@ -102,12 +116,15 @@
     (state.artwork === 'all' || slug(p.category) === state.artwork) &&
     words.every(word => haystack.get(p).includes(word));
   // Orbit order: ring by ring, then clockwise by stored bearing.
-  const byOrbit = (a, b) => a.collection - b.collection || a.bearing - b.bearing || a.position - b.position;
+  const byOrbit = (a, b) =>
+    a.collection - b.collection ||
+    a.bearing - b.bearing ||
+    a.position - b.position;
   const order = {
-    orbit: byOrbit,
+    'orbit': byOrbit,
     'price-up': (a, b) => a.price - b.price || byOrbit(a, b),
     'price-down': (a, b) => b.price - a.price || byOrbit(a, b),
-    name: (a, b) => a.name.localeCompare(b.name),
+    'name': (a, b) => a.name.localeCompare(b.name),
   };
 
   // ---------- Markup ----------
@@ -115,33 +132,32 @@
   const chip = (group, value, label) =>
     `<button class="chip" data-group="${group}" data-value="${value}" aria-pressed="false">${esc(label)}</button>`;
 
-  const filtersHtml =
-    '<div class="filters" id="filters">' +
-    Object.entries(groups)
-      .map(
-        ([key, group]) =>
-          `<div class="filter-row" role="group" aria-labelledby="filter-${key}">` +
-          `<span class="filter-label" id="filter-${key}">${esc(group.label)}</span>` +
-          group.options.map(([value, label]) => chip(key, value, label)).join('') +
-          '</div>',
-      )
-      .join('') +
-    '</div>';
+  const filtersHtml = `<div class="filters" id="filters">${Object.entries(
+    groups,
+  )
+    .map(
+      ([key, group]) =>
+        `<div class="filter-row" role="group" aria-labelledby="filter-${key}">` +
+        `<span class="filter-label" id="filter-${key}">${esc(group.label)}</span>${group.options
+          .map(([value, label]) => chip(key, value, label))
+          .join('')}</div>`,
+    )
+    .join('')}</div>`;
 
   const toolbarHtml =
-    '<div class="toolbar">' +
-    '<button class="filter-toggle" aria-expanded="false" aria-controls="filters">Filter +</button>' +
-    '<div class="sort-row" role="group" aria-labelledby="sort-label"><span class="filter-label" id="sort-label">Sort</span>' +
-    sorts.map(([value, label]) => chip('sort', value, label)).join('') +
-    '</div>' +
-    '<label class="search"><span class="visually-hidden">Search the catalogue</span>' +
+    `<div class="toolbar">` +
+    `<button class="filter-toggle" aria-expanded="false" aria-controls="filters">Filter +</button>` +
+    `<div class="sort-row" role="group" aria-labelledby="sort-label"><span class="filter-label" id="sort-label">Sort</span>${sorts
+      .map(([value, label]) => chip('sort', value, label))
+      .join('')}</div>` +
+    `<label class="search"><span class="visually-hidden">Search the catalogue</span>` +
     `<input type="search" placeholder="Search" autocomplete="off" spellcheck="false" maxlength="${SEARCH_MAX}">` +
-    '<kbd aria-hidden="true">/</kbd></label>' +
-    '<p class="result-count" aria-hidden="true"></p><p class="visually-hidden" aria-live="polite" id="result-status"></p>' +
-    '<button class="clear-filters" hidden>Clear ×</button>' +
-    '<div class="view-switch" role="group" aria-label="View">' +
-    views.map(view => chip('view', view, view)).join('<span aria-hidden="true">/</span>') +
-    '</div></div>';
+    `<kbd aria-hidden="true">/</kbd></label>` +
+    `<p class="result-count" aria-hidden="true"></p><p class="visually-hidden" aria-live="polite" id="result-status"></p>` +
+    `<button class="clear-filters" hidden>Clear ×</button>` +
+    `<div class="view-switch" role="group" aria-label="View">${views
+      .map(view => chip('view', view, view))
+      .join('<span aria-hidden="true">/</span>')}</div></div>`;
 
   const indexHtml =
     '<section class="catalogue-index" aria-label="Catalogue index"><div class="index-head" aria-hidden="true">' +
@@ -153,14 +169,12 @@
     `${products.length} pieces / ${collectionData.length} collections`;
   main.insertAdjacentHTML(
     'beforeend',
-    filtersHtml +
-      toolbarHtml +
-      '<section class="catalogue-grid" aria-label="Catalogue grid"></section>' +
-      indexHtml +
-      '<div class="load-more-row" hidden><span class="shown-count"></span><button class="load-more">Show more ↓</button></div>' +
-      catalogueField.markup() +
-      '<div class="empty-state" hidden><span class="mono muted">No signal</span>' +
-      '<p>Nothing in range for these filters.</p><button class="clear-filters">Clear filters ×</button></div>',
+    `${
+      filtersHtml + toolbarHtml
+    }<section class="catalogue-grid" aria-label="Catalogue grid"></section>${
+      indexHtml
+    }<div class="load-more-row" hidden><span class="shown-count"></span><button class="load-more">Show more ↓</button></div>${catalogueField.markup()}<div class="empty-state" hidden><span class="mono muted">No signal</span>` +
+      `<p>Nothing in range for these filters.</p><button class="clear-filters">Clear filters ×</button></div>`,
   );
 
   const grid = main.querySelector('.catalogue-grid');
@@ -182,6 +196,10 @@
   const tpl = document.createElement('template');
   const cards = new Map();
   const rows = new Map();
+  /**
+   *
+   * @param p
+   */
   function cardFor(p) {
     let el = cards.get(p);
     if (!el) {
@@ -193,6 +211,10 @@
     }
     return el;
   }
+  /**
+   *
+   * @param p
+   */
   function rowFor(p) {
     let el = rows.get(p);
     if (!el) {
@@ -232,16 +254,29 @@
     apply,
   });
 
+  /**
+   *
+   */
   function writeUrl() {
     const query = new URLSearchParams();
-    for (const key of Object.keys(defaults)) if (state[key] !== defaults[key]) query.set(key, state[key]);
+    for (const key of Object.keys(defaults)) {
+      if (state[key] !== defaults[key]) query.set(key, state[key]);
+    }
     const search = query.toString();
-    history.replaceState(null, '', location.pathname + (search ? '?' + search : ''));
+    history.replaceState(
+      null,
+      '',
+      location.pathname + (search ? `?${search}` : ''),
+    );
     // The product page reads this to send "← Catalogue" back to the same view and filters.
     sessionStore.set(STORAGE_KEYS.catalogue, search);
   }
 
   // Render the grid or index from `from` up to the current limit (from 0 replaces the list).
+  /**
+   *
+   * @param from
+   */
   function renderList(from) {
     const isGrid = state.view === 'grid';
     const container = isGrid ? grid : indexList;
@@ -253,33 +288,53 @@
     return els;
   }
 
+  /**
+   *
+   */
   function updateMoreRow() {
     const shown = Math.min(limit, currentList.length);
     moreRow.hidden = state.view === 'field' || shown >= currentList.length;
-    moreRow.querySelector('.shown-count').textContent = `Showing ${shown} of ${currentList.length}`;
+    moreRow.querySelector('.shown-count').textContent =
+      `Showing ${shown} of ${currentList.length}`;
   }
 
   // Fade in only the first items of a batch, with a single layout for the whole batch (not one per element).
+  /**
+   *
+   * @param els
+   */
   function animateIn(els) {
     if (motion.matches || !els.length) return;
     void main.offsetWidth;
     els.slice(0, 24).forEach((el, i) => {
-      el.style.animationDelay = Math.min(i, 14) * 22 + 'ms';
+      el.style.animationDelay = `${Math.min(i, 14) * 22}ms`;
       el.classList.add('arriving');
     });
   }
   main.addEventListener('animationend', event => {
-    if (event.target.classList.contains('arriving') && !event.target.closest('.contact')) {
+    if (
+      event.target.classList.contains('arriving') &&
+      !event.target.closest('.contact')
+    ) {
       event.target.classList.remove('arriving');
     }
   });
 
   // Options: animate (fade the new list in), typing (debounce the URL and announcement while the visitor
   // types), keepLimit (keep the number of items already shown).
+  /**
+   *
+   * @param root0
+   * @param root0.animate
+   * @param root0.typing
+   * @param root0.keepLimit
+   */
   function apply({ animate = false, typing = false, keepLimit = false } = {}) {
     const applyStart = performance.now();
     const words = fold(state.q).split(/\s+/).filter(Boolean);
-    currentList = products.filter(p => matches(p, words)).sort(order[state.sort]);
+    currentList = products
+      .filter(p => matches(p, words))
+      .sort(order[state.sort]);
     const list = currentList;
     visible = new Set(list);
     if (!keepLimit) limit = batchSize();
@@ -307,9 +362,16 @@
   }
 
   // Chips, visible sections, counts and the filter toggle, for the list now in range.
+  /**
+   *
+   * @param list
+   */
   function renderControls(list) {
     main.querySelectorAll('.chip').forEach(c => {
-      c.setAttribute('aria-pressed', String(state[c.dataset.group] === c.dataset.value));
+      c.setAttribute(
+        'aria-pressed',
+        String(state[c.dataset.group] === c.dataset.value),
+      );
     });
     for (const [view, el] of Object.entries(sections)) {
       el.hidden = state.view !== view || (view !== 'field' && !list.length);
@@ -317,13 +379,21 @@
     empty.hidden = !!list.length || state.view === 'field';
     toolbar.querySelector('.sort-row').hidden = state.view === 'field';
     const active =
-      ['collection', 'colour', 'artwork'].filter(k => state[k] !== 'all').length + (state.q ? 1 : 0);
+      ['collection', 'colour', 'artwork'].filter(k => state[k] !== 'all')
+        .length + (state.q ? 1 : 0);
     toolbar.querySelector('.clear-filters').hidden = !active;
-    filterToggle.textContent =
-      'Filter ' + (filtersEl.classList.contains('open') ? '−' : '+') + (active ? ` (${active})` : '');
-    count.textContent = list.length ? `${pad(list.length)} of ${products.length} in range` : 'No signal';
+    filterToggle.textContent = `Filter ${
+      filtersEl.classList.contains('open') ? '−' : '+'
+    }${active ? ` (${active})` : ''}`;
+    count.textContent = list.length
+      ? `${pad(list.length)} of ${products.length} in range`
+      : 'No signal';
   }
 
+  /**
+   *
+   * @param focusFirst
+   */
   function loadMore(focusFirst) {
     if (state.view === 'field' || limit >= currentList.length) return;
     const from = limit;
@@ -331,8 +401,11 @@
     const els = renderList(from);
     animateIn(els);
     // Keyboard users continue from the first new item rather than back at the button.
-    if (focusFirst && els[0])
-      (els[0].matches('a') ? els[0] : els[0].querySelector('a')).focus({ preventScroll: true });
+    if (focusFirst && els[0]) {
+      (els[0].matches('a') ? els[0] : els[0].querySelector('a')).focus({
+        preventScroll: true,
+      });
+    }
   }
 
   // ---------- Controls ----------
@@ -344,8 +417,12 @@
       loadMore(false);
       // A tall screen may still show the row after one batch; keep going until it is out of reach.
       requestAnimationFrame(() => {
-        if (!moreRow.hidden && moreRow.getBoundingClientRect().top < innerHeight + LOAD_AHEAD_PX)
+        if (
+          !moreRow.hidden &&
+          moreRow.getBoundingClientRect().top < innerHeight + LOAD_AHEAD_PX
+        ) {
           loadMore(false);
+        }
       });
     },
     { rootMargin: `0px 0px ${LOAD_AHEAD_PX}px 0px` },
@@ -361,7 +438,12 @@
       return;
     }
     if (event.target.closest('.clear-filters')) {
-      Object.assign(state, { collection: 'all', colour: 'all', artwork: 'all', q: '' });
+      Object.assign(state, {
+        collection: 'all',
+        colour: 'all',
+        artwork: 'all',
+        q: '',
+      });
       search.value = '';
       apply({ animate: true });
     }
@@ -374,7 +456,9 @@
   });
   // "/" jumps to search from anywhere outside a text field.
   document.addEventListener('keydown', event => {
-    if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return;
+    if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) {
+      return;
+    }
     if (event.target.closest('input,textarea,select,[contenteditable]')) return;
     event.preventDefault();
     search.focus();
@@ -388,8 +472,14 @@
     apply();
     // The toolbar may be pinned far down the page; bring the opened panel into view beneath it.
     if (open) {
-      const top = filtersEl.getBoundingClientRect().top + scrollY - toolbar.offsetHeight - 4;
-      if (top < scrollY) scrollTo({ top, behavior: motion.matches ? 'instant' : 'smooth' });
+      const top =
+        filtersEl.getBoundingClientRect().top +
+        scrollY -
+        toolbar.offsetHeight -
+        4;
+      if (top < scrollY) {
+        scrollTo({ top, behavior: motion.matches ? 'instant' : 'smooth' });
+      }
     }
   });
 
@@ -397,13 +487,17 @@
 
   const sweep = indexSection.querySelector('.index-sweep');
   new ResizeObserver(() => {
-    sweep.style.setProperty('--top', indexList.offsetTop + 'px');
-    sweep.style.setProperty('--h', indexList.offsetHeight + 'px');
-    sweep.style.animationDuration = Math.max(4, indexList.offsetHeight / 220).toFixed(1) + 's';
+    sweep.style.setProperty('--top', `${indexList.offsetTop}px`);
+    sweep.style.setProperty('--h', `${indexList.offsetHeight}px`);
+    sweep.style.animationDuration = `${Math.max(4, indexList.offsetHeight / 220).toFixed(1)}s`;
   }).observe(indexList);
 
   // ---------- First render, and landing back on a piece from its product page ----------
 
+  /**
+   *
+   * @param piece
+   */
   function landOn(piece) {
     if (!visible.has(piece)) return;
     if (state.view === 'field') {

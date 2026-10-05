@@ -4,7 +4,8 @@
 //
 // Classic script (see shared.js): defines the global `homeLocator`. Uses shared.js.
 const homeLocator = (() => {
-  const nameOf = i => `${pad(i + 1)} / ${collectionData[i].title.toUpperCase()}`;
+  const nameOf = i =>
+    `${pad(i + 1)} / ${collectionData[i].title.toUpperCase()}`;
 
   // Wire up the locator.
   //   nav       the .mini-radar element (its ring buttons carry data-collection)
@@ -12,28 +13,49 @@ const homeLocator = (() => {
   //   sections  the collection <section> elements, by collection index
   //   motion    the prefers-reduced-motion media query (instant scrolling)
   // Returns update(active): call with the collection index in view, or -1 for none, whenever the page scrolls.
+  /**
+   *
+   * @param root0
+   * @param root0.nav
+   * @param root0.footer
+   * @param root0.sections
+   * @param root0.motion
+   */
   function mount({ nav, footer, sections, motion }) {
     const title = nav.querySelector('strong');
     const buttons = [...document.querySelectorAll('[data-collection]')];
     let active = -1;
 
+    /**
+     *
+     * @param current
+     */
     function update(current) {
       active = current;
       nav.classList.toggle('visible', current >= 0);
-      nav.style.setProperty('--lift', Math.max(0, innerHeight - footer.getBoundingClientRect().top) + 'px');
+      nav.style.setProperty(
+        '--lift',
+        `${Math.max(0, innerHeight - footer.getBoundingClientRect().top)}px`,
+      );
       nav.inert = current < 0;
       if (current < 0) return;
       title.textContent = nameOf(current);
       buttons.forEach(button => {
-        button.setAttribute('aria-current', String(Number(button.dataset.collection) === current));
+        button.setAttribute(
+          'aria-current',
+          String(Number(button.dataset.collection) === current),
+        );
       });
     }
 
     buttons.forEach(button => {
       const i = Number(button.dataset.collection);
       button.addEventListener('click', () => {
-        sections[i].scrollIntoView({ behavior: motion.matches ? 'instant' : 'smooth', block: 'start' });
-        history.replaceState(null, '', '#' + collectionData[i].id);
+        sections[i].scrollIntoView({
+          behavior: motion.matches ? 'instant' : 'smooth',
+          block: 'start',
+        });
+        history.replaceState(null, '', `#${collectionData[i].id}`);
       });
       const preview = () => {
         title.textContent = nameOf(i);

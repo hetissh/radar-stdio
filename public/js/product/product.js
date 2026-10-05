@@ -56,12 +56,14 @@
   const fromCatalogue = query.get('from') === 'catalogue';
   const link = s => productUrl(s) + (fromCatalogue ? '&from=catalogue' : '');
   const catalogueUrl = (() => {
-    const saved = new URLSearchParams(sessionStore.get(STORAGE_KEYS.catalogue) || '');
+    const saved = new URLSearchParams(
+      sessionStore.get(STORAGE_KEYS.catalogue) || '',
+    );
     saved.set('piece', p.id);
-    return 'catalogue.html?' + saved;
+    return `catalogue.html?${saved}`;
   })();
 
-  document.title = p.name + ' — RADAR STUDIO';
+  document.title = `${p.name} — RADAR STUDIO`;
   const crumb = document.querySelector('.crumb');
   if (fromCatalogue) {
     crumb.href = catalogueUrl;
@@ -74,8 +76,11 @@
   // ---------- Markup ----------
 
   const priceHtml = reduced(p)
-    ? `<del>${money(p.original)}</del><span>${money(p.price)}</span>` +
-      (collection.id === 'end-of-season' ? '<span class="muted">End of season</span>' : '')
+    ? `<del>${money(p.original)}</del><span>${money(p.price)}</span>${
+        collection.id === 'end-of-season'
+          ? '<span class="muted">End of season</span>'
+          : ''
+      }`
     : `<span>${money(p.price)}</span>`;
 
   const readout = [
@@ -87,13 +92,20 @@
     ['Bearing', `${bearingLabel(p)}° / Ring ${ring}`],
     ['Source', 'Supplied reference'],
   ];
-  const readoutHtml = readout.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('');
+  const readoutHtml = readout
+    .map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`)
+    .join('');
 
   // Pieces sit along a shallow arc, echoing the collection orbit on the homepage.
+  /**
+   *
+   */
   function orbitArcHtml() {
     const windowed = count > ORBIT_WINDOW * 2 + 1;
     const pieces = windowed
-      ? Array.from({ length: ORBIT_WINDOW * 2 + 1 }, (_, k) => around(k - ORBIT_WINDOW))
+      ? Array.from({ length: ORBIT_WINDOW * 2 + 1 }, (_, k) =>
+          around(k - ORBIT_WINDOW),
+        )
       : siblings;
     const slots = pieces.length;
     // Slot i's point on a 300-unit-radius arc spanning 50°; fractional slots extend past the ends.
@@ -114,21 +126,18 @@
       .map((s, i) => {
         const at = xy(point(i));
         const current = s === p;
-        return (
-          `<a role="listitem" href="${link(s)}" aria-label="${pad(rank(s))} ${esc(s.name)}"` +
-          (current ? ' aria-current="page" class="current"' : '') +
-          `><circle class="hit" ${at} r="11"/>` +
-          (current ? `<circle class="halo" ${at} r="9" pathLength="24"/>` : '') +
-          `<circle class="dot" ${at} r="${current ? 4 : 2.6}"/></a>`
-        );
+        return `<a role="listitem" href="${link(s)}" aria-label="${pad(rank(s))} ${esc(s.name)}"${
+          current ? ' aria-current="page" class="current"' : ''
+        }><circle class="hit" ${at} r="11"/>${
+          current ? `<circle class="halo" ${at} r="9" pathLength="24"/>` : ''
+        }<circle class="dot" ${at} r="${current ? 4 : 2.6}"/></a>`;
       })
       .join('');
     return (
-      '<svg class="orbit-arc" viewBox="0 0 300 70" role="list">' +
-      `<path class="arc-path" d="M${x0.toFixed(1)} ${y0.toFixed(1)} A300 300 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" pathLength="90"/>` +
-      ends +
-      dots +
-      '</svg>'
+      `<svg class="orbit-arc" viewBox="0 0 300 70" role="list">` +
+      `<path class="arc-path" d="M${x0.toFixed(1)} ${y0.toFixed(1)} A300 300 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" pathLength="90"/>${
+        ends
+      }${dots}</svg>`
     );
   }
 
@@ -148,44 +157,42 @@
 
   const stageHtml =
     `<section class="piece-stage" aria-label="${esc(p.name)}, garment view">` +
-    '<canvas class="lock-field" aria-hidden="true"></canvas>' +
+    `<canvas class="lock-field" aria-hidden="true"></canvas>` +
     `<div class="lock-readout mono" aria-hidden="true"><span class="lock-state">Scanning 000%</span>` +
     `<span>BRG ${bearingLabel(p)}° / R${ring}</span><span>${pad(index + 1)} / ${pad(count)}</span>` +
-    '<span class="media-state"></span></div>' +
-    '<div class="garment-space piece-garment"><div class="tee-view">' +
-    `<div class="concept-tee ${p.dark ? 'dark' : ''}">` +
-    art(
-      { ...p, title: 'Artwork: ' + p.title },
-      { className: 'tee-art', eager: true, sizes: '(max-width: 900px) 40vw, 300px' },
-    ) +
-    '<img class="neck-mark" src="assets/radar-logo-updated.png" alt=""></div></div></div>' +
-    productMedia.markup(p) +
-    '</section>';
+    `<span class="media-state"></span></div>` +
+    `<div class="garment-space piece-garment"><div class="tee-view">` +
+    `<div class="concept-tee ${p.dark ? 'dark' : ''}">${art(
+      { ...p, title: `Artwork: ${p.title}` },
+      {
+        className: 'tee-art',
+        eager: true,
+        sizes: '(max-width: 900px) 40vw, 300px',
+      },
+    )}<img class="neck-mark" src="assets/radar-logo-updated.png" alt=""></div></div></div>${productMedia.markup(
+      p,
+    )}</section>`;
 
   const infoHtml =
-    '<section class="piece-info" aria-labelledby="piece-title">' +
+    `<section class="piece-info" aria-labelledby="piece-title">` +
     `<p class="piece-kicker mono muted">${ring} / ${esc(collection.title)} · ${pad(index + 1)} of ${pad(count)}</p>` +
     `<h1 id="piece-title">${esc(p.name)}</h1>` +
-    `<p class="piece-price mono">${priceHtml}</p>` +
-    productSizes.markup() +
-    `<dl class="readout">${readoutHtml}</dl>` +
+    `<p class="piece-price mono">${priceHtml}</p>${productSizes.markup()}<dl class="readout">${readoutHtml}</dl>` +
     `<div class="signal-notes"><h2 class="mono muted">Signal notes</h2><p>${esc(p.description)}</p>` +
     `<p class="mono muted">${esc(p.status)}<br>Illustrative garment / sample price</p></div>` +
-    '</section>';
+    `</section>`;
 
   const orbitNavHtml =
     `<nav class="orbit-nav" aria-label="Pieces in ${esc(collection.title)}">` +
-    `<a class="orbit-step prev" href="${link(prev)}"><span class="mono muted">← ${pad(rank(prev))}</span><span>${esc(prev.name)}</span></a>` +
-    orbitArcHtml() +
-    `<a class="orbit-step next" href="${link(next)}"><span class="mono muted">${pad(rank(next))} →</span><span>${esc(next.name)}</span></a>` +
-    '</nav>';
+    `<a class="orbit-step prev" href="${link(prev)}"><span class="mono muted">← ${pad(rank(prev))}</span><span>${esc(prev.name)}</span></a>${orbitArcHtml()}<a class="orbit-step next" href="${link(next)}"><span class="mono muted">${pad(rank(next))} →</span><span>${esc(next.name)}</span></a>` +
+    `</nav>`;
 
   const moreHtml =
-    '<section class="more-orbit" aria-labelledby="more-title">' +
+    `<section class="more-orbit" aria-labelledby="more-title">` +
     `<div class="more-head"><h2 id="more-title" class="mono">More on this orbit</h2>${viewAllHtml}</div>` +
-    `<div class="more-rail" tabindex="0" role="region" aria-label="More from ${esc(collection.title)}">` +
-    nearby.map(productCard).join('') +
-    '</div></section>';
+    `<div class="more-rail" tabindex="0" role="region" aria-label="More from ${esc(collection.title)}">${nearby
+      .map(productCard)
+      .join('')}</div></section>`;
 
   main.innerHTML = `<div class="piece-hero">${stageHtml}${infoHtml}</div>${orbitNavHtml}${moreHtml}`;
   if (fromCatalogue) {
@@ -210,7 +217,14 @@
 
   // Arrow keys move along the orbit when nothing else has focus.
   document.addEventListener('keydown', event => {
-    if (document.activeElement !== document.body || event.altKey || event.metaKey || event.ctrlKey) return;
+    if (
+      document.activeElement !== document.body ||
+      event.altKey ||
+      event.metaKey ||
+      event.ctrlKey
+    ) {
+      return;
+    }
     if (event.key === 'ArrowLeft') location.href = link(prev);
     if (event.key === 'ArrowRight') location.href = link(next);
   });

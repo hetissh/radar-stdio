@@ -25,6 +25,11 @@ const catalogueField = (() => {
   const ringRadius = k => ((k + 1.4) / 4.4) * 0.8;
 
   // CSS position for a point `fraction` of the half-width from the centre, at a compass bearing in degrees.
+  /**
+   *
+   * @param fraction
+   * @param degrees
+   */
   function at(fraction, degrees) {
     const a = (degrees * Math.PI) / 180;
     const left = (50 + 50 * fraction * Math.sin(a)).toFixed(3);
@@ -32,6 +37,9 @@ const catalogueField = (() => {
     return `left:${left}%;top:${top}%`;
   }
 
+  /**
+   *
+   */
   function markup() {
     const ringLabels = collectionData
       .map(
@@ -39,7 +47,9 @@ const catalogueField = (() => {
           `<button class="ring-label" data-ring="${esc(k)}" style="${at(ringRadius(k), 22.5)}">${pad(k + 1)}</button>`,
       )
       .join('');
-    const legend = collectionData.map((c, k) => `<span>${pad(k + 1)} ${esc(c.title)}</span>`).join('');
+    const legend = collectionData
+      .map((c, k) => `<span>${pad(k + 1)} ${esc(c.title)}</span>`)
+      .join('');
     return (
       '<section class="field-view" aria-label="Catalogue field"><div class="field-side">' +
       '<div class="field-head"><span class="field-mode"></span><button class="zoom-out" hidden>← All rings</button></div>' +
@@ -62,7 +72,30 @@ const catalogueField = (() => {
   //   getList()  the pieces currently in range, in the chosen sort order
   //   isVisible(p) whether a piece is in range
   //   apply()    re-applies the catalogue state (called after zooming)
-  function mount({ section, state, motion, coord, linkFor, byOrbit, getList, isVisible, apply }) {
+  /**
+   *
+   * @param root0
+   * @param root0.section
+   * @param root0.state
+   * @param root0.motion
+   * @param root0.coord
+   * @param root0.linkFor
+   * @param root0.byOrbit
+   * @param root0.getList
+   * @param root0.isVisible
+   * @param root0.apply
+   */
+  function mount({
+    section,
+    state,
+    motion,
+    coord,
+    linkFor,
+    byOrbit,
+    getList,
+    isVisible,
+    apply,
+  }) {
     const stage = section.querySelector('.field-stage');
     const contact = section.querySelector('.contact');
     const modeLabel = section.querySelector('.field-mode');
@@ -109,6 +142,10 @@ const catalogueField = (() => {
     const blipHtml = p =>
       `<a class="blip${p.dark ? ' washed' : ''}" href="${linkFor(p)}" data-product="${p.id}" ` +
       `style="${at(ringRadius(p.collection), bearingOf(p))}" aria-label="${describe(p)}"></a>`;
+    /**
+     *
+     * @param p
+     */
     function blipFor(p) {
       let el = blips.get(p);
       if (!el) {
@@ -121,10 +158,15 @@ const catalogueField = (() => {
 
     // ---------- Layout ----------
 
-    const ringCapacity = k => Math.floor((radar.TAU * ringRadius(k) * (half || 300)) / BLIP_SPACING);
+    const ringCapacity = k =>
+      Math.floor((radar.TAU * ringRadius(k) * (half || 300)) / BLIP_SPACING);
 
     // Zoomed in, pieces are dealt to bands in bearing order by a smooth weighted round-robin, weighted by each
     // band's circumference, so outer bands take more pieces and spacing is even. Stable for a given collection.
+    /**
+     *
+     * @param p
+     */
     function bandOf(p) {
       let entry = bandCache.get(p.collection);
       if (!entry) {
@@ -152,6 +194,10 @@ const catalogueField = (() => {
       return entry;
     }
 
+    /**
+     *
+     * @param p
+     */
     function radiusOf(p) {
       if (fieldMode !== 'zoom') return ringRadius(p.collection);
       const { radii, index } = bandOf(p);
@@ -159,12 +205,19 @@ const catalogueField = (() => {
     }
 
     // A piece's position as percentages of the field: [left, top].
+    /**
+     *
+     * @param p
+     */
     function pointOf(p) {
       const a = (bearingOf(p) * Math.PI) / 180;
       const r = radiusOf(p);
       return [50 + 50 * r * Math.sin(a), 50 - 50 * r * Math.cos(a)];
     }
 
+    /**
+     *
+     */
     function layoutField() {
       const list = getList();
       ringCounts = collectionData.map(() => 0);
@@ -175,7 +228,9 @@ const catalogueField = (() => {
         ring = -1;
         state.ring = '';
       }
-      const fits = list.length <= DETAIL_MAX && ringCounts.every((n, k) => n <= ringCapacity(k));
+      const fits =
+        list.length <= DETAIL_MAX &&
+        ringCounts.every((n, k) => n <= ringCapacity(k));
       autoZoom = false;
       // Too busy, but only one ring in range (e.g. a collection filter): open that ring directly.
       if (ring < 0 && !fits) {
@@ -189,6 +244,9 @@ const catalogueField = (() => {
       fieldMode = ring >= 0 ? 'zoom' : fits ? 'detail' : 'summary';
     }
 
+    /**
+     *
+     */
     function renderField() {
       layoutField();
       armed = null;
@@ -202,15 +260,17 @@ const catalogueField = (() => {
       const els = shown.map(p => {
         const el = blipFor(p);
         const [x, y] = pointOf(p);
-        el.style.left = x.toFixed(3) + '%';
-        el.style.top = y.toFixed(3) + '%';
+        el.style.left = `${x.toFixed(3)}%`;
+        el.style.top = `${y.toFixed(3)}%`;
         el.tabIndex = -1;
         el.classList.remove('active', 'ping');
         return el;
       });
       blipLayer.replaceChildren(...els);
       // One tab stop for the whole radar; arrow keys move between blips.
-      roving = blips.get(shown.includes(contactPiece) ? contactPiece : shown[0]) || null;
+      roving =
+        blips.get(shown.includes(contactPiece) ? contactPiece : shown[0]) ||
+        null;
       if (roving) roving.tabIndex = 0;
       targets = shown.map(p => {
         const a = -Math.PI / 2 + (bearingOf(p) * Math.PI) / 180;
@@ -225,11 +285,15 @@ const catalogueField = (() => {
     }
 
     // In summary the ring labels become buttons with counts; otherwise they are decoration.
+    /**
+     *
+     */
     function renderRingButtons() {
       const summary = fieldMode === 'summary';
       ringButtons.forEach((button, k) => {
         button.hidden = fieldMode === 'zoom';
-        button.textContent = pad(k + 1) + (summary ? ' · ' + ringCounts[k] : '');
+        button.textContent =
+          pad(k + 1) + (summary ? ` · ${ringCounts[k]}` : '');
         button.disabled = summary && !ringCounts[k];
         button.tabIndex = summary ? 0 : -1;
         if (summary) {
@@ -245,6 +309,9 @@ const catalogueField = (() => {
       });
     }
 
+    /**
+     *
+     */
     function renderModeLabel() {
       if (fieldMode === 'zoom') {
         modeLabel.innerHTML =
@@ -260,13 +327,23 @@ const catalogueField = (() => {
 
     // k = ring index, or -1 for all rings. With focus, zooming in lands on the radar's blip and zooming out
     // returns to the ring you came from.
+    /**
+     *
+     * @param k
+     * @param focus
+     */
     function zoomTo(k, focus) {
       const from = zoomRing;
       state.ring = k >= 0 ? collectionData[k].id : '';
       apply();
       if (!focus) return;
       const back = ringButtons[from];
-      const target = k >= 0 ? roving : back && !back.hidden && !back.disabled ? back : roving;
+      const target =
+        k >= 0
+          ? roving
+          : back && !back.hidden && !back.disabled
+            ? back
+            : roving;
       target && target.focus({ preventScroll: true });
     }
 
@@ -279,7 +356,11 @@ const catalogueField = (() => {
     stage.addEventListener('click', event => {
       if (fieldMode !== 'summary' || event.target.closest('button,a')) return;
       const rect = stage.getBoundingClientRect();
-      const distance = Math.hypot(event.clientX - rect.left - half, event.clientY - rect.top - half) / half;
+      const distance =
+        Math.hypot(
+          event.clientX - rect.left - half,
+          event.clientY - rect.top - half,
+        ) / half;
       let nearest = -1;
       let best = 0.09;
       collectionData.forEach((c, i) => {
@@ -294,6 +375,9 @@ const catalogueField = (() => {
 
     // ---------- Contact panel ----------
 
+    /**
+     *
+     */
     function showOverview() {
       contactPiece = null;
       contact.dataset.mode = 'overview';
@@ -312,8 +396,19 @@ const catalogueField = (() => {
     }
 
     // mode: 'selected' (the visitor's choice) or 'tracking' (following the sweep). p = null shows "No signal".
+    /**
+     *
+     * @param p
+     * @param mode
+     */
     function showContact(p, mode) {
-      if (p === contactPiece && contact.dataset.mode === mode && contact.childElementCount) return;
+      if (
+        p === contactPiece &&
+        contact.dataset.mode === mode &&
+        contact.childElementCount
+      ) {
+        return;
+      }
       contactPiece = p;
       contact.dataset.mode = mode;
       shown.forEach(q => blips.get(q).classList.toggle('active', q === p));
@@ -335,25 +430,42 @@ const catalogueField = (() => {
         `<div><dt>Artwork</dt><dd>${esc(p.title)}</dd></div>` +
         `<div><dt>Discipline</dt><dd>${esc(p.discipline)}</dd></div></dl>` +
         `<a class="contact-open" href="${linkFor(p)}"><span>Open piece</span><span aria-hidden="true">↗</span></a></div>`;
-      if (!motion.matches) contact.querySelector('.contact-body').classList.add('arriving');
+      if (!motion.matches) {
+        contact.querySelector('.contact-body').classList.add('arriving');
+      }
     }
 
     // After the filters change: keep the panel on something in range.
+    /**
+     *
+     */
     function updateContact() {
       if (fieldMode === 'summary') showOverview();
-      else if (!contactPiece || !shown.includes(contactPiece)) showContact(shown[0] || null, 'tracking');
+      else if (!contactPiece || !shown.includes(contactPiece)) {
+        showContact(shown[0] || null, 'tracking');
+      }
     }
 
     // Hover or focus selects a piece; it releases back to sweep tracking a moment after you leave.
+    /**
+     *
+     * @param p
+     */
     function select(p) {
       clearTimeout(unlockTimer);
       locked = true;
       showContact(p, 'selected');
     }
+    /**
+     *
+     */
     function hold() {
       clearTimeout(unlockTimer);
       locked = true;
     }
+    /**
+     *
+     */
     function release() {
       clearTimeout(unlockTimer);
       unlockTimer = setTimeout(() => {
@@ -424,13 +536,21 @@ const catalogueField = (() => {
     section.addEventListener('click', event => {
       const target = event.target.closest('.contact-open,.blip');
       const tee = contact.querySelector('[data-morph]');
-      if (target && tee && contactPiece && target.getAttribute('href') === linkFor(contactPiece)) {
+      if (
+        target &&
+        tee &&
+        contactPiece &&
+        target.getAttribute('href') === linkFor(contactPiece)
+      ) {
         tee.style.viewTransitionName = 'piece';
       }
     });
 
     // ---------- Radar canvas ----------
 
+    /**
+     *
+     */
     function resizeField() {
       const width = stage.clientWidth;
       if (!width || section.hidden) return;
@@ -440,11 +560,19 @@ const catalogueField = (() => {
       const firstSize = !size;
       size = width;
       half = width / 2;
-      radar.size([canvas, base], size, size);
+      radar.size([canvas, base], { width: size, height: size });
       const limit = half * 0.97;
       cells = [];
-      for (let col = -Math.floor(limit / cellW); col <= Math.floor(limit / cellW); col++) {
-        for (let row = -Math.floor(limit / cellH); row <= Math.floor(limit / cellH); row++) {
+      for (
+        let col = -Math.floor(limit / cellW);
+        col <= Math.floor(limit / cellW);
+        col++
+      ) {
+        for (
+          let row = -Math.floor(limit / cellH);
+          row <= Math.floor(limit / cellH);
+          row++
+        ) {
           const x = col * cellW;
           const y = row * cellH;
           if (Math.hypot(x, y) > limit) continue;
@@ -465,10 +593,19 @@ const catalogueField = (() => {
 
     const dottedRing = (fraction, tone) => {
       baseCtx.fillStyle = tones[tone];
-      radar.ringDots(baseCtx, half, half, fraction * half, 6, 16);
+      radar.ringDots(baseCtx, {
+        cx: half,
+        cy: half,
+        radius: fraction * half,
+        spacing: 6,
+        minDots: 16,
+      });
     };
 
     // The static layer: grid, rings, unlinked pieces and the bearing scale.
+    /**
+     *
+     */
     function paintBase() {
       baseCtx.clearRect(0, 0, size, size);
       for (const cell of cells) {
@@ -481,25 +618,38 @@ const catalogueField = (() => {
         for (const r of radii) dottedRing(r, 40);
       } else {
         collectionData.forEach((c, k) =>
-          dottedRing(ringRadius(k), fieldMode === 'summary' && !ringCounts[k] ? 22 : 46),
+          dottedRing(
+            ringRadius(k),
+            fieldMode === 'summary' && !ringCounts[k] ? 22 : 46,
+          ),
         );
       }
       dottedRing(0.97, 26);
       // Pieces without a blip: filtered-out ones as faint dots; in summary, everything in range as a density band.
       const plotted = new Set(shown);
-      const pool = fieldMode === 'zoom' ? products.filter(p => p.collection === zoomRing) : products;
+      const pool =
+        fieldMode === 'zoom'
+          ? products.filter(p => p.collection === zoomRing)
+          : products;
       for (const p of pool) {
         if (plotted.has(p)) continue;
         const inRange = isVisible(p);
         if (fieldMode !== 'summary' && inRange) continue;
         baseCtx.fillStyle = tones[inRange ? 66 : 18];
         const [x, y] = pointOf(p);
-        baseCtx.fillText(inRange ? ':' : '.', (x / 100) * size, (y / 100) * size);
+        baseCtx.fillText(
+          inRange ? ':' : '.',
+          (x / 100) * size,
+          (y / 100) * size,
+        );
       }
       // Bearing scale: a mark every 10°, crosses every 30°, labels at the cardinals.
       const scalePoint = (degrees, fraction) => {
         const a = -Math.PI / 2 + (degrees * Math.PI) / 180;
-        return [half + Math.cos(a) * half * fraction, half + Math.sin(a) * half * fraction];
+        return [
+          half + Math.cos(a) * half * fraction,
+          half + Math.sin(a) * half * fraction,
+        ];
       };
       for (let d = 0; d < 360; d += 10) {
         baseCtx.fillStyle = tones[d % 90 ? 32 : 64];
@@ -507,28 +657,44 @@ const catalogueField = (() => {
       }
       baseCtx.font = '9px monospace';
       baseCtx.fillStyle = tones[72];
-      for (const d of [0, 90, 180, 270]) baseCtx.fillText(pad(d, 3), ...scalePoint(d, 0.93));
+      for (const d of [0, 90, 180, 270]) {
+        baseCtx.fillText(pad(d, 3), ...scalePoint(d, 0.93));
+      }
       baseCtx.font = '11px monospace';
     }
 
+    /**
+     *
+     * @param now
+     */
     function paintField(now) {
-      if (!size || (!motion.matches && now - lastPaint < radar.FRAME_MS)) return;
+      if (!size || (!motion.matches && now - lastPaint < radar.FRAME_MS)) {
+        return;
+      }
       const dt = Math.min((now - lastPaint) / 1000, 0.05);
       const paintStart = performance.now();
       lastPaint = now;
-      radar.drawBase(ctx, base, size, size);
+      radar.drawBase(ctx, base, { width: size, height: size });
       if (motion.matches) return;
       // Counterclockwise, like the homepage radar. A blip pings as the leading edge crosses its bearing.
       angle = (angle - SWEEP_SPEED * dt) % radar.TAU;
       const decay = Math.exp(-dt / 0.9);
       for (const cell of cells) {
         const lag = radar.lag(cell.theta, angle);
-        const strength = lag < SWEEP_WIDTH ? Math.pow(1 - lag / SWEEP_WIDTH, 1.6) : 0;
-        cell.echo = Math.max(cell.echo * decay, strength > 0 ? 0.04 + strength * 0.1 : 0);
+        const strength =
+          lag < SWEEP_WIDTH ? Math.pow(1 - lag / SWEEP_WIDTH, 1.6) : 0;
+        cell.echo = Math.max(
+          cell.echo * decay,
+          strength > 0 ? 0.04 + strength * 0.1 : 0,
+        );
         const brightness = Math.max(strength, cell.echo);
         if (brightness < 0.012) continue;
         ctx.fillStyle = tones[Math.round(12 + brightness * 70)];
-        ctx.fillText(cell.glyph || radar.sweepGlyph(brightness), cell.x, cell.y);
+        ctx.fillText(
+          cell.glyph || radar.sweepGlyph(brightness),
+          cell.x,
+          cell.y,
+        );
       }
       for (const target of targets) {
         const lag = radar.lag(target.a, angle);
@@ -538,12 +704,20 @@ const catalogueField = (() => {
       radarPerf?.record('field paint', performance.now() - paintStart);
     }
 
+    /**
+     *
+     */
     function repaint() {
       paintBase();
       lastPaint = 0;
       paintField(performance.now());
     }
 
+    /**
+     *
+     * @param target
+     * @param now
+     */
     function ping(target, now) {
       target.el.classList.remove('ping');
       void target.el.offsetWidth; // restart the CSS animation
@@ -555,13 +729,19 @@ const catalogueField = (() => {
       }
     }
     stage.addEventListener('animationend', event => {
-      if (event.target.classList.contains('blip')) event.target.classList.remove('ping');
+      if (event.target.classList.contains('blip')) {
+        event.target.classList.remove('ping');
+      }
     });
 
     const animation = radar.loop(
       paintField,
-      () => state.view === 'field' && inView && !document.hidden && !motion.matches,
+      () =>
+        state.view === 'field' && inView && !document.hidden && !motion.matches,
     );
+    /**
+     *
+     */
     function syncField() {
       if (state.view !== 'field') return animation.stop();
       if (!size) resizeField();

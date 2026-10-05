@@ -18,15 +18,24 @@ const productMedia = (() => {
   const SWIPE_MIN_X = 70; // px of horizontal travel that counts as a swipe
   const SWIPE_MAX_Y = 50; // px of vertical travel beyond which it is a scroll, not a swipe
 
-  const mediaList = piece => (piece.media && piece.media.length ? piece.media : DEFAULT_MEDIA);
+  const mediaList = piece =>
+    piece.media && piece.media.length ? piece.media : DEFAULT_MEDIA;
   // Thumbnails from scripts/build_images.py: the path with / as --, then -<width>.<ext>.
   const mediaThumb = (src, width, ext) =>
-    'assets/thumbs/' + src.replace(/\.[a-z0-9]+$/i, '').replace(/\//g, '--') + '-' + width + '.' + ext;
-  const mediaSrcset = (src, ext) => `${mediaThumb(src, 640, ext)} 640w, ${mediaThumb(src, 1280, ext)} 1280w`;
+    `assets/thumbs/${src.replace(/\.[a-z0-9]+$/i, '').replace(/\//g, '--')}-${
+      width
+    }.${ext}`;
+  const mediaSrcset = (src, ext) =>
+    `${mediaThumb(src, 640, ext)} 640w, ${mediaThumb(src, 1280, ext)} 1280w`;
   // The still image that stands for an item in previews: a photo itself, or a video's poster.
-  const stillOf = m => (m.type === 'image' ? m.src : m.type === 'video' ? m.poster : '');
+  const stillOf = m =>
+    m.type === 'image' ? m.src : m.type === 'video' ? m.poster : '';
 
   // The stage's media layers (placed after the garment) and the controls below them.
+  /**
+   *
+   * @param piece
+   */
   function markup(piece) {
     const strip = mediaList(piece)
       .map((m, i) => {
@@ -54,6 +63,13 @@ const productMedia = (() => {
 
   // Wire up the viewer in `stage` (the .piece-stage holding the garment and markup()) for `piece`.
   // motion: the prefers-reduced-motion media query (no wipes, no autoplaying loops).
+  /**
+   *
+   * @param root0
+   * @param root0.stage
+   * @param root0.piece
+   * @param root0.motion
+   */
   function mount({ stage, piece, motion }) {
     const media = mediaList(piece);
     const garment = stage.querySelector('.piece-garment');
@@ -81,6 +97,10 @@ const productMedia = (() => {
     // ---------- Views ----------
 
     // Built on first view and kept, so a video keeps its place when you come back to it.
+    /**
+     *
+     * @param i
+     */
     function mediaElement(i) {
       if (mediaEls.has(i)) return mediaEls.get(i);
       const m = media[i];
@@ -107,9 +127,14 @@ const productMedia = (() => {
     }
 
     const activeVideo = () =>
-      media[current] && media[current].type === 'video' ? mediaEls.get(current) : null;
+      media[current] && media[current].type === 'video'
+        ? mediaEls.get(current)
+        : null;
     const isLoop = m => m && m.type === 'video' && m.mode === 'loop';
 
+    /**
+     *
+     */
     function playLoop() {
       const video = activeVideo();
       if (
@@ -125,12 +150,26 @@ const productMedia = (() => {
       syncPause();
     }
 
+    /**
+     *
+     */
     function syncPause() {
       const video = activeVideo();
       pauseButton.hidden = !isLoop(media[current]);
-      if (video) pauseButton.textContent = video.paused ? 'Play loop ▶' : 'Pause loop ‖';
+      if (video) {
+        pauseButton.textContent = video.paused
+          ? 'Play loop ▶'
+          : 'Pause loop ‖';
+      }
     }
 
+    /**
+     *
+     * @param i
+     * @param root0
+     * @param root0.focus
+     * @param root0.announce
+     */
     function showMedia(i, { focus = false, announce = false } = {}) {
       if (i === current) return;
       const m = media[i];
@@ -156,9 +195,14 @@ const productMedia = (() => {
         mediaFrame.replaceChildren(mediaElement(i));
         surface = mediaFrame;
       }
-      loupeToggle.disabled = !(m.type === 'image' || (m.type === 'garment' && m.side === 'front'));
+      loupeToggle.disabled = !(
+        m.type === 'image' ||
+        (m.type === 'garment' && m.side === 'front')
+      );
       mediaState.textContent = `Media ${pad(i + 1)} / ${pad(media.length)} · ${m.label}`;
-      if (announce) mediaStatus.textContent = `${m.label}, ${i + 1} of ${media.length}`;
+      if (announce) {
+        mediaStatus.textContent = `${m.label}, ${i + 1} of ${media.length}`;
+      }
       if (!motion.matches && stage.dataset.ready) {
         surface.classList.remove('wipe');
         void surface.offsetWidth; // restart the CSS animation
@@ -171,6 +215,10 @@ const productMedia = (() => {
     const step = by => (current + by + media.length) % media.length;
 
     // Fetch the next item's image (or poster) ahead of time, so moving on feels instant.
+    /**
+     *
+     * @param i
+     */
     function preloadNext(i) {
       const k = (i + 1) % media.length;
       const m = media[k];
@@ -193,7 +241,9 @@ const productMedia = (() => {
     strip.forEach((button, i) => {
       button.addEventListener('click', () => showMedia(i, { announce: true }));
       button.addEventListener('keydown', event => {
-        const by = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+        const by = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[
+          event.key
+        ];
         const target = by
           ? step(by)
           : event.key === 'Home'
@@ -206,8 +256,9 @@ const productMedia = (() => {
         showMedia(target, { focus: true, announce: true });
       });
     });
-    for (const el of [teeView, mediaFrame])
+    for (const el of [teeView, mediaFrame]) {
       el.addEventListener('animationend', () => el.classList.remove('wipe'));
+    }
 
     // ---------- Video ----------
 
@@ -240,16 +291,22 @@ const productMedia = (() => {
     });
     motion.addEventListener('change', () => {
       const video = activeVideo();
-      if (motion.matches && video && media[current].mode === 'loop') video.pause();
-      else playLoop();
+      if (motion.matches && video && media[current].mode === 'loop') {
+        video.pause();
+      } else playLoop();
     });
 
     // ---------- Art detail lens (garment front and photos) ----------
 
     const lensImage = () =>
-      media[current].type === 'image' ? mediaEls.get(current).querySelector('img') : artImg;
+      media[current].type === 'image'
+        ? mediaEls.get(current).querySelector('img')
+        : artImg;
 
     // Images are contained in their box, so measure the drawn image rather than the element.
+    /**
+     *
+     */
     function artRect() {
       const img = lensImage();
       const box = img.getBoundingClientRect();
@@ -266,19 +323,28 @@ const productMedia = (() => {
       };
     }
 
+    /**
+     *
+     */
     function placeLoupe() {
       const art = artRect();
       const stageRect = stage.getBoundingClientRect();
-      const zoom = media[current].type === 'image' ? LENS_ZOOM.image : LENS_ZOOM.garment;
+      const zoom =
+        media[current].type === 'image' ? LENS_ZOOM.image : LENS_ZOOM.garment;
       const size = loupe.offsetWidth;
-      loupe.style.left = art.left + lens.x * art.width - stageRect.left + 'px';
-      loupe.style.top = art.top + lens.y * art.height - stageRect.top + 'px';
-      loupe.style.backgroundSize = art.width * zoom + 'px ' + art.height * zoom + 'px';
-      loupe.style.backgroundPosition =
-        size / 2 - lens.x * art.width * zoom + 'px ' + (size / 2 - lens.y * art.height * zoom) + 'px';
+      loupe.style.left = `${art.left + lens.x * art.width - stageRect.left}px`;
+      loupe.style.top = `${art.top + lens.y * art.height - stageRect.top}px`;
+      loupe.style.backgroundSize = `${art.width * zoom}px ${art.height * zoom}px`;
+      loupe.style.backgroundPosition = `${
+        size / 2 - lens.x * art.width * zoom
+      }px ${size / 2 - lens.y * art.height * zoom}px`;
       loupeCoords.textContent = `X ${pad(Math.round(lens.x * 100), 3)} / Y ${pad(Math.round(lens.y * 100), 3)}`;
     }
 
+    /**
+     *
+     * @param on
+     */
     function setLoupe(on) {
       const target = surface === mediaFrame ? mediaFrame : garment;
       const photo = media[current].type === 'image';
@@ -298,19 +364,32 @@ const productMedia = (() => {
         ? mediaThumb(media[current].src, 1280, 'jpg')
         : remoteArt(piece.image)
           ? cdnWidth(piece.image, 1600)
-          : 'assets/' + piece.image;
+          : `assets/${piece.image}`;
       loupe.style.backgroundImage = `url("${full}")`;
       lens = { x: 0.5, y: 0.5 };
       target.classList.add('inspecting');
       target.tabIndex = 0;
-      target.setAttribute('aria-label', 'Art detail lens. Use the arrow keys to move it, Escape to close.');
+      target.setAttribute(
+        'aria-label',
+        'Art detail lens. Use the arrow keys to move it, Escape to close.',
+      );
       placeLoupe();
     }
 
     // The lens follows a mouse, or a finger or pen while pressed.
+    /**
+     *
+     * @param event
+     */
     function follow(event) {
-      if (!loupeOn || (event.pointerType !== 'mouse' && !event.buttons && event.type === 'pointermove'))
+      if (
+        !loupeOn ||
+        (event.pointerType !== 'mouse' &&
+          !event.buttons &&
+          event.type === 'pointermove')
+      ) {
         return;
+      }
       const art = artRect();
       lens = {
         x: clamp((event.clientX - art.left) / art.width, 0, 1),
@@ -320,6 +399,10 @@ const productMedia = (() => {
     }
 
     // Arrow keys move the lens; Escape closes it.
+    /**
+     *
+     * @param event
+     */
     function nudge(event) {
       if (!loupeOn) return;
       if (event.key === 'Escape') {
@@ -327,11 +410,19 @@ const productMedia = (() => {
         loupeToggle.focus();
         return;
       }
-      const move = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[event.key];
+      const move = {
+        ArrowLeft: [-1, 0],
+        ArrowRight: [1, 0],
+        ArrowUp: [0, -1],
+        ArrowDown: [0, 1],
+      }[event.key];
       if (!move) return;
       event.preventDefault();
       event.stopPropagation();
-      lens = { x: clamp(lens.x + move[0] * LENS_STEP, 0, 1), y: clamp(lens.y + move[1] * LENS_STEP, 0, 1) };
+      lens = {
+        x: clamp(lens.x + move[0] * LENS_STEP, 0, 1),
+        y: clamp(lens.y + move[1] * LENS_STEP, 0, 1),
+      };
       placeLoupe();
     }
 
@@ -354,7 +445,11 @@ const productMedia = (() => {
     stage.addEventListener(
       'pointerdown',
       event => {
-        if (event.pointerType !== 'mouse' && !loupeOn && !event.target.closest('video,button')) {
+        if (
+          event.pointerType !== 'mouse' &&
+          !loupeOn &&
+          !event.target.closest('video,button')
+        ) {
           swipe = { x: event.clientX, y: event.clientY };
         }
       },
@@ -365,7 +460,11 @@ const productMedia = (() => {
       const dx = event.clientX - swipe.x;
       const dy = event.clientY - swipe.y;
       swipe = null;
-      if (Math.abs(dx) > SWIPE_MIN_X && Math.abs(dy) < SWIPE_MAX_Y && media.length > 1) {
+      if (
+        Math.abs(dx) > SWIPE_MIN_X &&
+        Math.abs(dy) < SWIPE_MAX_Y &&
+        media.length > 1
+      ) {
         showMedia(step(dx < 0 ? 1 : -1), { announce: true });
       }
     });
