@@ -19,8 +19,8 @@ radar-stdio/
 ├── public/               everything served to visitors (Cloudflare's output directory)
 │   ├── index.html, catalogue.html, product.html
 │   ├── js/
-│   │   ├── core/         shared foundations: shared.js (data, artwork, theme, bag, menu),
-│   │   │                 radar.js (radar drawing helpers), config.js (generated)
+│   │   ├── core/         shared by every page: format, storage, data, artwork, pieces,
+│   │   │                 theme, bag, navigation, radar; config.js (generated)
 │   │   ├── home/         homepage modules
 │   │   ├── catalogue/    catalogue modules
 │   │   └── product/      product page modules

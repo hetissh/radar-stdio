@@ -2,41 +2,50 @@
 
 ## Project map
 
-| File | Role |
+Layout, commands, environment and deployment are in the [README](../README.md);
+coding rules are in [AI_CODING_RULES.md](../AI_CODING_RULES.md). Sections
+below this map are a working log: file names in them are the ones in use at
+the time. The October 2026 refactor renamed and split many files (`site/` became
+`public/`, `tools/` became `scripts/`, `shared.js` became the `js/core/`
+modules); [REFACTOR_CHANGELOG.md](../REFACTOR_CHANGELOG.md) maps every old
+path to its new one.
+
+| Path (under `public/` unless noted) | Role |
 |---|---|
-| `index.html` | Homepage: entrance radar, four collection rails, collection locator. Page-specific CSS is inline; page script at the end. |
-| `collections.css` | Homepage-only styles: collection rails, arcs, locator and their light overrides. |
-| `product.html` | Product page shell: header, `<main id="piece">`, footer, bag dialog. |
-| `product.css` | Product page styles. |
-| `product.js` | Renders the product page from `?id=` and runs the lock-on radar, sizes, views, loupe and orbit navigation. |
-| `catalogue.html` | Catalogue page shell: header, `<main id="catalogue">` with the intro, footer, bag dialog. |
-| `catalogue.css` | Catalogue styles: filters, toolbar, grid, index, field, contact panel. |
-| `catalogue.js` | Builds the catalogue: filters, sort, search, URL state, and the grid, index and field views. |
-| `shared.css` | Shared by every page: tokens (dark and light), reset, header and menu, dialogs, garments and lighting, captions, footer, bag, view transitions. |
-| `shared.js` | Shared by every page: the data loader (`radarData`, `collectionData`, `products` once loaded), `art()`, `money()`, `productCard()`, `productUrl()`, `productById()`, `bearingOf()`, theme (`applyTheme`, `tones`, `echoInk`), concept bag, header menu, garment-morph naming. |
-| `export.py` | Builds the portable `RADAR-Gallery-to-Archive.html` (about 5 MB), inlining shared.css, collections.css, shared.js, the logo and one 640px JPEG thumbnail per artwork. Homepage only. |
-| `data/products.json` | **Source of truth for the catalogue**: collections and every piece, with explicit price, original price, colour (`dark`), bearing and curated position. Edit this, then run `build_data.py`. |
-| `build_data.py` | Checks `data/products.json` (unique ids, positions and bearings per collection) and splits it into the files pages load: `data/home.json`, `data/index.json`, `data/collections/<id>.json`, `data/pieces/<id>.json`, plus `data/inline.js` for pages opened from disk. Generated files must not be edited by hand. |
-| `build_images.py` | Makes display-size thumbnails of every reference image with macOS `sips` (no installs). Run it after adding or changing an image. |
-| `assets/` | Supplied logo and the 34 reference images (originals, unchanged). |
-| `assets/pieces/<id>/` | Product media files (photos, MP4 videos, posters, `.vtt` captions) referenced from a piece's `media` list. |
-| `tools/build_config.py` | Writes `site/scripts/config.js` (git-ignored) with the public Shopify settings from the environment or `.env`; `shopify: null` when none are set. Runs on every Cloudflare Pages build. See docs/shopify-plan.md, Phase 0. |
-| `tools/check_shopify.py` | Checks the keys in `.env` against the store: both Storefront tokens, the served API version and, once set, the Admin client credentials and granted scopes. Prints results, never key values. |
-| `tools/shopify_api.py` | Minimal Admin API client for the tools (standard library): client-credentials token in memory, GraphQL with throttle retry and `userErrors` raised, paging, staged file uploads, job polling. |
-| `tools/shopify_import.py` | Imports `site/data/products.json` into the store (metafield definitions, 4 manual collections, 34 products with XS–XL variants, artwork, Headless publishing, collection order) and checks every field round-trips. Re-runnable; `--check` is read-only; `--only 21,32`; `--reset-stock`. See docs/shopify-plan.md, Phase 1. |
-| `tools/sync_shopify.py` | Phase 2: reads the store and writes `site/data/products.json` (radar collections, active Headless pieces, Shopify CDN artwork for admin-made pieces); assigns and saves back ids, rings and bearings for new pieces. `--check`, `--if-configured` (Cloudflare builds), `--no-write-back`. |
-| `tools/shopify_webhooks.py` | Subscribes the store's product and collection webhooks to `<site>/api/shopify-webhook`; `--list`, `--remove`. |
-| `functions/api/shopify-webhook.js` | Cloudflare Pages Function: checks the Shopify signature and triggers a rebuild through the deploy hook, skipping when a queued build will already include the change. |
-| `site/_routes.json` | Cloudflare Pages: run Functions only for `/api/*`. |
-| `.env.example` | Template for the git-ignored `.env`: Shopify store domain, API version, Storefront tokens, Dev Dashboard app credentials. |
-| `tools/make_demo_video.swift` | Makes a stand-in MP4 (slow push-in across a still) and its poster with macOS's built-in AVFoundation: `swift tools/make_demo_video.swift in.png out.mp4 poster.jpg 6`. Demo use only. |
-| `assets/thumbs/` | Generated: `reference-NN-320` and `-640`, each as `.avif` and `.jpg`. |
+| `index.html` | Homepage shell: entrance, collections section, locator, footer, bag dialog. |
+| `catalogue.html`, `product.html` | Catalogue and product page shells. |
+| `css/shared.css` | Every page: tokens (dark and light), base, header and menu, garments and lighting, captions, dialogs and bag, footer, transitions, shared classes (`.page-title`, `.radar-canvas`, `.ring-svg`, `.readout-label`). |
+| `css/home.css`, `css/catalogue.css`, `css/product.css` | One stylesheet per page. |
+| `js/core/` | Shared by every page, in load order: `format.js` (esc, pad, clamp, money), `storage.js` (localStore, sessionStore, STORAGE_KEYS), `dev-tools.js` (?stress, ?perf), `data.js` (radarData, collectionData, products, productById, bearing helpers, showLoadError), `artwork.js` (art, remoteArt, cdnWidth), `pieces.js` (productUrl, priceHtml, productCard), `theme.js` (tones, echoInk), `bag.js`, `navigation.js` (menu and page transitions; no globals), `radar.js` (radar drawing helpers). `config.js` is generated. |
+| `js/home/` | `home.js` (page script), `home-entrance.js` (entrance radar), `home-collections.js` (rails), `home-arcs.js` (rail canvases), `home-locator.js` (corner locator). |
+| `js/catalogue/` | `catalogue.js` (page script), `catalogue-state.js` (filters, sort, search, URL), `catalogue-field.js` (field view), `catalogue-radar.js` (its canvas), `catalogue-contact.js` (contact panel). |
+| `js/product/` | `product.js` (page script), `product-lock.js` (lock-on radar), `product-media.js` (views, video), `product-lens.js` (art-detail lens), `product-sizes.js` (size rings, add to bag). |
+| `data/products.json` | **Source of truth for the catalogue**: collections and every piece, with price, original price, colour (`dark`), bearing and curated position. Generated from Shopify when it is configured. |
+| `data/` (the rest) | Generated by `scripts/build_data.py`: `home.json`, `index.json`, `collections/<id>.json`, `pieces/<id>.json` and `inline.js` (for pages opened from disk). |
+| `assets/` | Supplied logo and the 34 reference images (originals, unchanged); `assets/pieces/<id>/` product media; `assets/thumbs/` generated thumbnails. |
+| `_routes.json` | Cloudflare Pages: run Functions only for `/api/*`. |
+| `scripts/` (repo root) | `build_data.py`, `build_images.py`, `build_config.py`, `export.py`, `sync_shopify.py`, `shopify_import.py`, `shopify_webhooks.py`, `check_shopify.py`, shared `paths.py`, `environment.py`, `shopify_api.py`, and `make_demo_video.swift`. Each file's docstring says how to run it. |
+| `functions/api/shopify-webhook.js` (repo root) | Cloudflare Pages Function: checks the Shopify signature and triggers a rebuild through the deploy hook, skipping when a queued build will already include the change. |
+| `tests/` (repo root) | JavaScript tests (`tests/js`, `tests/functions`) and Python tests (`tests/py`); `npm test` runs both. |
 
-Adding or changing a piece: with the Shopify keys set, edit it in the Shopify admin and run `python3 tools/sync_shopify.py && python3 tools/build_data.py` (Cloudflare does this on every build). Without them, edit `data/products.json` (give a new piece a free bearing; `freeBearing()` in the console prints one), add its image to `assets/`, then run `python3 build_images.py && python3 build_data.py && python3 export.py`.
+Adding or changing a piece: with the Shopify keys set, edit it in the Shopify
+admin; Cloudflare runs `scripts/sync_shopify.py` and `scripts/build_data.py`
+on every build (locally: `python3 scripts/sync_shopify.py && python3
+scripts/build_data.py`). Without them, edit `public/data/products.json` (give
+a new piece a free bearing; `freeBearing()` in the console prints one), add
+its image to `public/assets/`, then run `python3 scripts/build_images.py &&
+python3 scripts/build_data.py && python3 scripts/export.py`.
 
-Load order on every page: inline theme script in `<head>`, then `shared.css`, then page CSS. At the end of `<body>`, `shared.js` runs, then the page script. Page scripts rely on the globals from shared.js.
+Load order on every page: the inline theme script in `<head>`, then
+`css/shared.css`, then the page's stylesheet. At the end of `<body>`: the
+`js/core/` scripts, then the page's modules, then the page script (see
+AI_CODING_RULES.md, Modularization).
 
-Browser storage keys: `radar-theme` (`light` or `dark`) and `radar-bag` (JSON `[{id,size,qty}]`) in localStorage, plus `radar-catalogue` (the catalogue's last query string) in sessionStorage. A bag change in one tab updates other open tabs through the `storage` event.
+Browser storage keys (`STORAGE_KEYS` in `js/core/storage.js`): `radar-theme`
+(`light` or `dark`) and `radar-bag` (JSON `[{id,size,qty,name,price}]`) in
+localStorage, plus `radar-catalogue` (the catalogue's last query string) and
+`radar-stress` in sessionStorage. A bag change in one tab updates other open
+tabs through the `storage` event.
 
 ## Production hardening (code review, 2026-10-05)
 
@@ -48,14 +57,14 @@ A full review of the front end found 10 issues. Five blockers are fixed:
 4. **Error states.** `getData()` records the HTTP status. A missing piece file (404) still shows "Signal lost". Any other failure (offline, server error, a missing collection file) shows a "Signal interrupted" panel with a Retry button, on the homepage (under the entrance, which keeps running), the catalogue and the product page. Tested by hiding each data file.
 5. **Dev tools are local only.** `?stress` and `?perf` work only on `localhost`, `127.0.0.1`, `*.localhost` and files opened from disk (`isDevHost()` in shared.js). On any other host they're ignored and a leftover stress session is cleared. Note that a LAN address such as `192.168.x.x` counts as public, so stress testing from a phone over Wi-Fi needs a `.localhost` name or a tunnel.
 
-Still open from the review:
+Still open from the review (updated after the October 2026 refactor):
 - **Collection locator:** the homepage's mini collection radar is hard-coded to 4 collections.
-- **Data checks:** `build_data.py` validates with `assert`, which `python -O` removes.
+- ~~**Data checks:** `build_data.py` validates with `assert`, which `python -O` removes.~~ Fixed: checks raise `CatalogueError`.
 - **Cache versions:** browser-cache versions are hand-edited `?v=` strings, and thumbnails are unversioned.
 - **Image sizes:** card thumbnails declare widths (`320w`/`640w`) that are really longest-side sizes for portrait images.
-- **Duplicated chrome:** the header, footer, bag dialog and theme script are copied across three pages, and `pad`/`clamp` are redefined per script.
+- **Duplicated chrome:** the header, footer, bag dialog and theme script are copied across three pages. (~~`pad`/`clamp` redefined per script~~: fixed, both are in `js/core/format.js`.)
 
-Also outside the code: search engines (content is rendered in the browser, there are no meta descriptions or social tags, and "Signal lost" returns 200), inline scripts that block a strict content-security policy, no git, tests or monitoring, and commerce and legal (see docs/shopify-plan.md).
+Also outside the code: search engines (content is rendered in the browser, there are no meta descriptions or social tags, and "Signal lost" returns 200), inline scripts that block a strict content-security policy, no monitoring (git and tests were added in the October 2026 refactor), and commerce and legal (see docs/shopify-plan.md).
 
 ## Product media: photos and video
 
