@@ -11,6 +11,17 @@ dependencies = []
 [project.optional-dependencies]
 dev = ["ruff>=0.1.13", "mypy>=1.8"]
 
+# Cloudflare Pages runs `pip install .` whenever this file exists. The scripts
+# are run in place, not installed, so the package is deliberately empty;
+# without this, setuptools scans the root, finds public/ and functions/, and
+# stops the build.
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = []
+
 # Google Python Style Guide plus clean-code rules. Formatting is ruff format.
 [tool.ruff]
 line-length = 80

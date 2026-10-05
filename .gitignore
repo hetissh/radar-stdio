@@ -6,6 +6,8 @@ Thumbs.db
 __pycache__/
 *.pyc
 .mypy_cache/
+*.egg-info/
+build/
 .ruff_cache/
 
 # Local Claude Code settings (machine-specific)
