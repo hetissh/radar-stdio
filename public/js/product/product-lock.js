@@ -1,32 +1,51 @@
-// Product page lock-on radar: behind the garment, the sweep turns two and a quarter times, slows onto the piece's
-// bearing and locks, while a reticle closes in on the garment; then it idles with a slow, dim sweep.
-// The readout above the stage counts "Scanning 000%" → "Locking" → "Signal locked / NN".
-//
-// Classic script (see shared.js): defines the global `productLock`. Uses shared.js and radar.js.
-const productLock = (() => {
-  const CELL_W = 7; // px between glyph columns
-  const CELL_H = 10; // px between glyph rows
-  const SWEEP_WIDTH = 1.7; // radians of afterglow behind the sweep line
-  const SCAN_S = 1.6; // seconds the sweep takes to slow onto the bearing
-  const LOCKED_S = 2; // seconds until the readout says "Signal locked"
-  const easeOut = x => 1 - Math.pow(1 - x, 3);
+/**
+ * @fileoverview The product page's lock-on radar. Behind the garment, the
+ * sweep turns two and a quarter times, slows onto the piece's bearing and
+ * locks, while a reticle closes in on the garment; then it idles with a slow,
+ * dim sweep. The readout above the stage counts "Scanning 000%", then
+ * "Locking", then "Signal locked / NN".
+ */
 
-  // Start the radar on the stage.
-  //   stage    the .piece-stage section (holds the .lock-field canvas and .lock-state label)
-  //   centre   the element the radar centres on and closes in around (the garment view)
-  //   art      the garment's artwork <img>; layout is measured again once it loads
-  //   bearing  the piece's bearing in degrees (where the sweep locks)
-  //   number   the piece's number within its collection, for the readout
-  //   motion   the prefers-reduced-motion media query (reduced motion: the locked state, no animation)
+/* exported productLock */
+/* global pad, clamp, radar, tones */
+
+const productLock = (() => {
+  // Pixels between glyph columns and rows.
+  const CELL_WIDTH = 7;
+  const CELL_HEIGHT = 10;
+  // Radians of afterglow behind the sweep line.
+  const SWEEP_WIDTH = 1.7;
+  // Seconds the sweep takes to slow onto the bearing.
+  const SCAN_SECONDS = 1.6;
+  // Seconds until the readout says "Signal locked".
+  const LOCKED_SECONDS = 2;
+  // Turns the sweep makes before it settles.
+  const SCAN_TURNS = 2.25;
+
   /**
-   *
-   * @param root0
-   * @param root0.stage
-   * @param root0.centre
-   * @param root0.art
-   * @param root0.bearing
-   * @param root0.number
-   * @param root0.motion
+   * Eases out cubically: fast at first, settling at 1.
+   * @param {number} progress 0 to 1.
+   * @return {number}
+   */
+  function easeOut(progress) {
+    return 1 - Math.pow(1 - progress, 3);
+  }
+
+  /**
+   * Starts the radar on the stage.
+   * @param {{
+   *   stage: !HTMLElement,
+   *   centre: !Element,
+   *   art: !HTMLImageElement,
+   *   bearing: number,
+   *   number: string,
+   *   motion: !MediaQueryList,
+   * }} options stage is the .piece-stage (with the .lock-field canvas and
+   *     .lock-state label); centre is what the radar centres on and closes
+   *     in around (the garment); art is the garment's artwork, re-measured
+   *     once loaded; bearing in degrees is where the sweep locks; number is
+   *     the piece's number in its collection; motion is the
+   *     prefers-reduced-motion query (shows the locked state, still).
    */
   function mount({ stage, centre, art, bearing, number, motion }) {
     const canvas = stage.querySelector('.lock-field');
@@ -46,9 +65,7 @@ const productLock = (() => {
     let visible = true;
     let lastLabel = '';
 
-    /**
-     *
-     */
+    /** Sizes the canvas to the stage and lays out the glyph grid. */
     function resize() {
       const rect = stage.getBoundingClientRect();
       const target = centre.getBoundingClientRect();
@@ -58,68 +75,69 @@ const productLock = (() => {
       cx = target.left + target.width / 2 - rect.left;
       cy = target.top + target.height / 2 - rect.top;
       reticle = Math.max(target.width, target.height) * 0.6;
-      const rx = target.width * 0.6;
-      const ry = target.height * 0.6;
-      cells = [];
-      for (
-        let col = -Math.ceil(cx / CELL_W);
-        col <= Math.ceil((width - cx) / CELL_W);
-        col++
-      ) {
-        for (
-          let row = -Math.ceil(cy / CELL_H);
-          row <= Math.ceil((height - cy) / CELL_H);
-          row++
-        ) {
-          const x = cx + col * CELL_W;
-          const y = cy + row * CELL_H;
-          cells.push({
+      cells = layoutCells(target.width * 0.6, target.height * 0.6);
+      repaint();
+    }
+
+    /**
+     * The glyph grid, centred on the garment, fading softly under it as on
+     * the homepage arcs.
+     * @param {number} radiusX The garment's ellipse, in pixels.
+     * @param {number} radiusY
+     * @return {!Array<!Object>}
+     */
+    function layoutCells(radiusX, radiusY) {
+      const result = [];
+      const firstCol = -Math.ceil(cx / CELL_WIDTH);
+      const lastCol = Math.ceil((width - cx) / CELL_WIDTH);
+      const firstRow = -Math.ceil(cy / CELL_HEIGHT);
+      const lastRow = Math.ceil((height - cy) / CELL_HEIGHT);
+      for (let col = firstCol; col <= lastCol; col++) {
+        for (let row = firstRow; row <= lastRow; row++) {
+          const x = cx + col * CELL_WIDTH;
+          const y = cy + row * CELL_HEIGHT;
+          const distance = Math.hypot((x - cx) / radiusX, (y - cy) / radiusY);
+          result.push({
             x,
             y,
             theta: Math.atan2(y - cy, x - cx),
             glyph: radar.gridGlyph(col, row),
             axis: col === 0 || row === 0,
-            // Marks fade softly under the garment, as on the collection arcs.
-            quiet: radar.fade(Math.hypot((x - cx) / rx, (y - cy) / ry)),
+            quiet: radar.fade(distance),
             echo: 0,
           });
         }
       }
-      repaint();
+      return result;
     }
 
     /**
-     *
+     * A dotted ring around the garment.
+     * @param {!CanvasRenderingContext2D} context
+     * @param {number} radius Pixels.
      */
+    function dottedRing(context, radius) {
+      radar.ringDots(context, { cx, cy, radius, spacing: 7, minDots: 12 });
+    }
+
+    /** Paints the static layer: the faded grid and two outer rings. */
     function paintBase() {
       baseCtx.clearRect(0, 0, width, height);
       for (const cell of cells) {
         if (!cell.glyph) continue;
-        baseCtx.fillStyle =
-          tones[Math.round((cell.axis ? 34 : 17) * cell.quiet)];
+        const tone = (cell.axis ? 34 : 17) * cell.quiet;
+        baseCtx.fillStyle = tones[Math.round(tone)];
         baseCtx.fillText(cell.glyph, cell.x, cell.y);
       }
       baseCtx.fillStyle = tones[30];
-      radar.ringDots(baseCtx, {
-        cx,
-        cy,
-        radius: reticle * 1.55,
-        spacing: 7,
-        minDots: 12,
-      });
+      dottedRing(baseCtx, reticle * 1.55);
       baseCtx.fillStyle = tones[22];
-      radar.ringDots(baseCtx, {
-        cx,
-        cy,
-        radius: reticle * 2.2,
-        spacing: 7,
-        minDots: 12,
-      });
+      dottedRing(baseCtx, reticle * 2.2);
     }
 
     /**
-     *
-     * @param now
+     * Paints one frame of the scan, lock and idle sweep.
+     * @param {number} now
      */
     function paint(now) {
       if (!width || (!motion.matches && now - lastPaint < radar.FRAME_MS)) {
@@ -127,20 +145,31 @@ const productLock = (() => {
       }
       const dt = Math.min((now - lastPaint) / 1000, 0.05);
       lastPaint = now;
-      const t = motion.matches ? 99 : (now - start) / 1000; // seconds since the page opened
-      const scan = clamp(t / SCAN_S, 0, 1);
-      // Two and a quarter turns that decelerate onto the bearing, then a slow, dim idle sweep.
-      const angle =
-        t < SCAN_S
-          ? lockAngle + radar.TAU * 2.25 * (1 - easeOut(scan))
-          : lockAngle - (t - SCAN_S) * 0.3;
-      const intensity = motion.matches
-        ? 0
-        : t < SCAN_S
-          ? 1
-          : Math.max(0.3, 1 - (t - SCAN_S) * 0.7);
-      const lock = easeOut(clamp((t - 1.1) / 0.9, 0, 1)); // 0 → 1 as the reticle closes in
-      const decay = Math.exp(-dt / 0.85);
+      const seconds = motion.matches ? 99 : (now - start) / 1000;
+      const scan = clamp(seconds / SCAN_SECONDS, 0, 1);
+      const scanning = seconds < SCAN_SECONDS;
+      // The turns decelerate onto the bearing, then a slow, dim idle sweep.
+      const angle = scanning
+        ? lockAngle + radar.TAU * SCAN_TURNS * (1 - easeOut(scan))
+        : lockAngle - (seconds - SCAN_SECONDS) * 0.3;
+      let intensity = 1;
+      if (motion.matches) {
+        intensity = 0;
+      } else if (!scanning) {
+        intensity = Math.max(0.3, 1 - (seconds - SCAN_SECONDS) * 0.7);
+      }
+      // 0 to 1 as the reticle closes in.
+      const lock = easeOut(clamp((seconds - 1.1) / 0.9, 0, 1));
+      paintSweep({ angle, intensity, decay: Math.exp(-dt / 0.85) });
+      paintReticle(lock);
+      updateLabel(seconds, scan);
+    }
+
+    /**
+     * Draws the static layer, then the lit cells behind the sweep.
+     * @param {{angle: number, intensity: number, decay: number}} sweep
+     */
+    function paintSweep({ angle, intensity, decay }) {
       radar.drawBase(ctx, base, { width, height });
       for (const cell of cells) {
         const lag = radar.lag(cell.theta, angle);
@@ -163,54 +192,60 @@ const productLock = (() => {
           cell.y,
         );
       }
-      paintReticle(lock);
-      const label =
-        t < SCAN_S
-          ? `Scanning ${pad(Math.round(scan * 100), 3)}%`
-          : t < LOCKED_S
-            ? 'Locking'
-            : `Signal locked / ${number}`;
-      if (label !== lastLabel) {
-        stateLabel.textContent = label;
-        lastLabel = label;
-        stage.classList.toggle('locked', t >= LOCKED_S);
-      }
     }
 
-    // The reticle closes in from a wide ring onto the garment, then a beam of dots marks the piece's bearing.
     /**
-     *
-     * @param lock
+     * The reticle closes in from a wide ring onto the garment, then a beam
+     * of dots marks the piece's bearing.
+     * @param {number} lock 0 (wide) to 1 (locked).
      */
     function paintReticle(lock) {
-      const r = reticle * (1 + 1.6 * (1 - lock));
+      const radius = reticle * (1 + 1.6 * (1 - lock));
       ctx.fillStyle = tones[Math.round(30 + 48 * lock)];
-      radar.ringDots(ctx, { cx, cy, radius: r, spacing: 7, minDots: 12 });
+      dottedRing(ctx, radius);
       // Tick marks at the four compass points, fading outwards.
-      for (let k = 0; k < 4; k++) {
-        const a = (k * radar.TAU) / 4;
-        for (let j = 0; j < 3; j++) {
-          ctx.fillStyle = tones[Math.round((70 - j * 18) * lock)];
+      for (let quarter = 0; quarter < 4; quarter++) {
+        const angle = (quarter * radar.TAU) / 4;
+        for (let step = 0; step < 3; step++) {
+          const distance = radius + 9 + step * 9;
+          ctx.fillStyle = tones[Math.round((70 - step * 18) * lock)];
           ctx.fillText(
-            k % 2 ? '|' : '-',
-            cx + Math.cos(a) * (r + 9 + j * 9),
-            cy + Math.sin(a) * (r + 9 + j * 9),
+            quarter % 2 ? '|' : '-',
+            cx + Math.cos(angle) * distance,
+            cy + Math.sin(angle) * distance,
           );
         }
       }
       if (lock <= 0) return;
       ctx.fillStyle = tones[Math.round(46 * lock)];
-      for (let d = r + 40; d < Math.hypot(width, height); d += 9) {
-        const x = cx + Math.cos(lockAngle) * d;
-        const y = cy + Math.sin(lockAngle) * d;
+      const reach = Math.hypot(width, height);
+      for (let distance = radius + 40; distance < reach; distance += 9) {
+        const x = cx + Math.cos(lockAngle) * distance;
+        const y = cy + Math.sin(lockAngle) * distance;
         if (x < 0 || y < 0 || x > width || y > height) break;
         ctx.fillText(':', x, y);
       }
     }
 
     /**
-     *
+     * Updates the readout when its text changes.
+     * @param {number} seconds Since the page opened.
+     * @param {number} scan 0 to 1 through the scan.
      */
+    function updateLabel(seconds, scan) {
+      let label = `Signal locked / ${number}`;
+      if (seconds < SCAN_SECONDS) {
+        label = `Scanning ${pad(Math.round(scan * 100), 3)}%`;
+      } else if (seconds < LOCKED_SECONDS) {
+        label = 'Locking';
+      }
+      if (label === lastLabel) return;
+      stateLabel.textContent = label;
+      lastLabel = label;
+      stage.classList.toggle('locked', seconds >= LOCKED_SECONDS);
+    }
+
+    /** Repaints the static layer and the current frame. */
     function repaint() {
       paintBase();
       lastPaint = 0;
@@ -221,15 +256,15 @@ const productLock = (() => {
       paint,
       () => visible && !document.hidden && !motion.matches,
     );
-    /**
-     *
-     */
+
+    /** Animates while visible, or paints one still frame. */
     function sync() {
       if (!animation.sync()) {
         lastPaint = 0;
         paint(performance.now());
       }
     }
+
     new ResizeObserver(resize).observe(stage);
     new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;
