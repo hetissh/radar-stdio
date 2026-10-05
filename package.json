@@ -1,12 +1,20 @@
 {
   "name": "radar-stdio",
   "private": true,
-  "description": "RADAR STUDIO storefront: static site in site/, build tools in tools/.",
+  "description": "RADAR STUDIO storefront: static site in public/, developer scripts in scripts/.",
   "scripts": {
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "node --test tests/",
+    "check": "npm run format:check && npm run lint && npm test"
   },
   "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "eslint": "9.39.5",
+    "eslint-plugin-jsdoc": "50.8.0",
+    "globals": "17.13.0",
     "prettier": "3.6.2"
   }
 }
