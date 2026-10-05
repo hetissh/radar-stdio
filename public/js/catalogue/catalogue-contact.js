@@ -123,9 +123,9 @@ const catalogueContact = (() => {
         `<h2>${esc(shown.name)}</h2>` +
         `<p class="contact-price">${priceHtml(shown)}</p>` +
         '<dl class="contact-readout">' +
-        `<div><dt>Colour</dt><dd>${colourOf(shown)}</dd></div>` +
-        `<div><dt>Artwork</dt><dd>${esc(shown.title)}</dd></div>` +
-        `<div><dt>Discipline</dt><dd>${esc(shown.discipline)}</dd></div>` +
+        `<div><dt class="readout-label">Colour</dt><dd class="readout-value">${colourOf(shown)}</dd></div>` +
+        `<div><dt class="readout-label">Artwork</dt><dd class="readout-value">${esc(shown.title)}</dd></div>` +
+        `<div><dt class="readout-label">Discipline</dt><dd class="readout-value">${esc(shown.discipline)}</dd></div>` +
         '</dl>' +
         `<a class="contact-open" href="${linkFor(shown)}">` +
         '<span>Open piece</span><span aria-hidden="true">↗</span></a></div>'

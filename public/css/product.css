@@ -1,16 +1,23 @@
-/* Product page: one piece, locked on the radar. Tokens, header, garments, footer and bag come from shared.css. */
+/*
+ * The product page: one piece, locked on the radar, with its views, sizes
+ * and details, and its neighbours on the collection orbit below. Tokens,
+ * header, garments, footer and bag come from shared.css. Responsive rules
+ * are gathered at the end.
+ */
 
 .piece {
   padding-top: 12px;
 }
-/* The hero is its own grid, so the sticky stage releases before the orbit strip. */
+/* The hero is its own grid, so the sticky stage releases before the orbit
+   strip. */
 .piece-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr);
   gap: 0 clamp(32px, 5vw, 96px);
 }
 
-/* Stage: the lock-on radar sits behind the garment and stays in view while the details scroll. */
+/* Stage: the lock-on radar sits behind the garment and stays in view while
+   the details scroll. */
 .piece-stage {
   position: sticky;
   top: 12px;
@@ -42,6 +49,9 @@
   inset: 11% 6% 15%;
   height: auto;
 }
+.piece-garment.media-hidden {
+  visibility: hidden;
+}
 .tee-view {
   height: 90%;
   max-width: 100%;
@@ -54,6 +64,7 @@
   height: 100%;
   max-width: none;
 }
+/* The back view: no artwork, the brand mark at the neck. */
 .concept-tee .neck-mark {
   display: none;
   top: 11%;
@@ -79,33 +90,28 @@
 .concept-tee.back:before {
   height: 6%;
 }
-.view-controls {
+
+/* Media: a numbered strip of views (garment, photos, video); one shows on
+   the stage at a time. */
+.media-frame {
   position: absolute;
-  left: var(--gutter);
-  right: 0;
-  bottom: 26px;
+  inset: 7% 5% 13%;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: center;
 }
-
-.view-controls button {
-  font: 10px var(--mono);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
-  padding: 6px 0;
+.media-frame picture {
+  display: contents;
 }
-.view-controls button[aria-pressed='true'],
-.view-controls button:hover:not(:disabled) {
-  color: var(--ink);
+.media-frame img,
+.media-frame video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
-.view-controls button:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-/* Front / back: a conic mask sweeps the new side into view like the radar beam. */
+/* Switching views: a conic mask sweeps the new view in like the radar
+   beam. */
 @property --sweep {
   syntax: '<angle>';
   inherits: false;
@@ -131,8 +137,94 @@
     --sweep: 374deg;
   }
 }
+.media-pause {
+  position: absolute;
+  top: 22px;
+  right: 24px;
+  z-index: 3;
+  font: 10px var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  padding: 6px 10px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+}
+.media-pause:hover {
+  border-color: var(--ink);
+}
+.view-controls {
+  position: absolute;
+  left: var(--gutter);
+  right: 0;
+  bottom: 26px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.view-controls button {
+  font: 10px var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 6px 0;
+}
+.view-controls button[aria-pressed='true'],
+.view-controls button:hover:not(:disabled) {
+  color: var(--ink);
+}
+.view-controls button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.media-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 16px;
+  align-items: center;
+}
+.media-strip button {
+  position: relative;
+  border-bottom: 1px solid transparent;
+}
+.media-strip button[aria-checked='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+.media-no {
+  margin-right: 6px;
+  opacity: 0.55;
+}
+/* A thumbnail that peeks above a strip button on hover. */
+.media-peek {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  width: 84px;
+  height: 84px;
+  padding: 3px;
+  transform: translate(-50%, 4px);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
+  z-index: 4;
+}
+.media-peek img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.media-strip button:hover .media-peek,
+.media-strip button:focus-visible .media-peek {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
 
-/* Art detail loupe */
+/* The art-detail lens (product-lens.js sets its position and background). */
 .loupe {
   position: absolute;
   width: 176px;
@@ -146,12 +238,23 @@
     0 14px 34px rgba(0, 0, 0, 0.35);
   pointer-events: none;
 }
+[data-theme='light'] .loupe {
+  box-shadow:
+    0 0 0 1px var(--ink),
+    0 14px 34px rgba(0, 0, 0, 0.18);
+}
+/* Artwork is printed on the garment, so it is tinted to match; photos show
+   as they are (this rule must follow the two tints). */
 .loupe.chalk {
   background-color: #e6e2d8;
   background-blend-mode: multiply;
 }
 .loupe.dark-tee {
   background-color: #2e2e2e;
+}
+.loupe.photo {
+  background-color: transparent;
+  background-blend-mode: normal;
 }
 .loupe svg {
   position: absolute;
@@ -161,11 +264,7 @@
   overflow: visible;
 }
 .loupe svg circle {
-  fill: none;
   stroke: var(--ink);
-  stroke-width: 1.3;
-  stroke-linecap: round;
-  stroke-dasharray: 0 1;
   opacity: 0.7;
 }
 .loupe-cross {
@@ -228,6 +327,38 @@
 .piece-price .muted {
   font-size: 10px;
 }
+.readout {
+  margin: 44px 0 0;
+  border-top: 1px solid var(--rule);
+}
+.readout div {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.signal-notes {
+  margin-top: 36px;
+}
+.signal-notes h2 {
+  font-size: 10px;
+  font-weight: 400;
+  margin: 0 0 10px;
+}
+.signal-notes p {
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0 0 14px;
+  max-width: 420px;
+}
+.signal-notes p.mono {
+  font-size: 9px;
+  line-height: 1.7;
+}
+
+/* Sizes are concentric radar rings, XS innermost; the chosen ring turns
+   solid. */
 .size-field {
   border-top: 1px solid var(--rule);
   padding-top: 18px;
@@ -242,8 +373,6 @@
 .size-value {
   color: var(--ink);
 }
-
-/* Sizes are concentric radar rings, XS innermost; the chosen ring turns solid. */
 .size-rings {
   position: relative;
   width: 184px;
@@ -261,20 +390,11 @@
   border-radius: 50%;
   z-index: var(--layer);
 }
-.size-ring svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  pointer-events: none;
+[data-theme='light'] .size-ring {
+  --ring: #9a9994;
 }
 .size-ring circle {
-  fill: none;
   stroke: var(--ring);
-  stroke-width: 1.3;
-  stroke-linecap: round;
-  stroke-dasharray: 0 1;
   transition: stroke 0.2s;
 }
 .size-ring:hover circle {
@@ -340,48 +460,8 @@
   outline-offset: -1px;
   cursor: default;
 }
-.readout {
-  margin: 44px 0 0;
-  border-top: 1px solid var(--rule);
-}
-.readout div {
-  display: grid;
-  grid-template-columns: 110px 1fr;
-  gap: 16px;
-  padding: 11px 0;
-  border-bottom: 1px solid var(--rule);
-}
-.readout dt {
-  font: 10px var(--mono);
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding-top: 2px;
-}
-.readout dd {
-  margin: 0;
-  font-size: 13px;
-}
-.signal-notes {
-  margin-top: 36px;
-}
-.signal-notes h2 {
-  font-size: 10px;
-  font-weight: 400;
-  margin: 0 0 10px;
-}
-.signal-notes p {
-  font-size: 14px;
-  line-height: 1.6;
-  margin: 0 0 14px;
-  max-width: 420px;
-}
-.signal-notes p.mono {
-  font-size: 9px;
-  line-height: 1.7;
-}
 
-/* Previous / next along the collection orbit */
+/* Previous / next along the collection orbit, either side of its arc. */
 .orbit-nav {
   display: grid;
   grid-template-columns: 1fr minmax(240px, 520px) 1fr;
@@ -416,6 +496,12 @@
   stroke-linecap: round;
   stroke-dasharray: 0 1;
   opacity: 0.6;
+}
+.orbit-arc .arc-more {
+  fill: var(--muted);
+  font: 9px var(--mono);
+  text-anchor: middle;
+  letter-spacing: 0.1em;
 }
 .orbit-arc .hit {
   fill: transparent;
@@ -476,8 +562,6 @@
 }
 .more-rail .product-card {
   flex: 0 0 clamp(200px, 20vw, 260px);
-  display: block;
-  -webkit-user-drag: none;
 }
 .more-rail .garment-space {
   height: clamp(220px, 28svh, 320px);
@@ -487,6 +571,7 @@
   text-underline-offset: 4px;
 }
 
+/* No such piece */
 .signal-lost {
   min-height: 62svh;
   display: flex;
@@ -507,15 +592,8 @@
   margin: 0 0 10px;
 }
 
-[data-theme='light'] .size-ring {
-  --ring: #9a9994;
-}
-[data-theme='light'] .loupe {
-  box-shadow:
-    0 0 0 1px var(--ink),
-    0 14px 34px rgba(0, 0, 0, 0.18);
-}
-
+/* Narrower: the stage stops being sticky and sits above the details, and
+   the add-to-bag button pins to the bottom of the screen. */
 @media (max-width: 900px) {
   .piece-hero {
     grid-template-columns: minmax(0, 1fr);
@@ -556,114 +634,6 @@
     width: 138px;
     height: 138px;
   }
-}
-@media (prefers-reduced-motion: reduce) {
-  .tee-view.wipe,
-  .media-frame.wipe {
-    animation: none;
-    -webkit-mask-image: none;
-    mask-image: none;
-  }
-}
-.orbit-arc .arc-more {
-  fill: var(--muted);
-  font: 9px var(--mono);
-  text-anchor: middle;
-  letter-spacing: 0.1em;
-}
-
-/* Media: a numbered strip of views (garment, photos, video); one shows on the stage at a time. */
-.piece-garment.media-hidden {
-  visibility: hidden;
-}
-.media-frame {
-  position: absolute;
-  inset: 7% 5% 13%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.media-frame picture {
-  display: contents;
-}
-.media-frame img,
-.media-frame video {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-}
-.media-strip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px 16px;
-  align-items: center;
-}
-.media-strip button {
-  position: relative;
-  border-bottom: 1px solid transparent;
-}
-.media-strip button[aria-checked='true'] {
-  color: var(--ink);
-  border-bottom-color: var(--ink);
-}
-.media-no {
-  margin-right: 6px;
-  opacity: 0.55;
-}
-.media-peek {
-  position: absolute;
-  bottom: calc(100% + 10px);
-  left: 50%;
-  width: 84px;
-  height: 84px;
-  padding: 3px;
-  transform: translate(-50%, 4px);
-  background: var(--paper);
-  border: 1px solid var(--rule);
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    opacity 0.15s,
-    transform 0.15s;
-  z-index: 4;
-}
-.media-peek img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.media-strip button:hover .media-peek,
-.media-strip button:focus-visible .media-peek {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
-.media-pause {
-  position: absolute;
-  top: 22px;
-  right: 24px;
-  z-index: 3;
-  font: 10px var(--mono);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink);
-  padding: 6px 10px;
-  border: 1px solid var(--rule);
-  background: var(--paper);
-}
-.media-pause:hover {
-  border-color: var(--ink);
-}
-.loupe.photo {
-  background-color: transparent;
-  background-blend-mode: normal;
-}
-@media (hover: none) {
-  .media-peek {
-    display: none;
-  }
-}
-@media (max-width: 700px) {
   .media-strip {
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -683,7 +653,19 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .tee-view.wipe,
+  .media-frame.wipe {
+    animation: none;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
   .media-peek {
     transition: none;
+  }
+}
+/* Without hover there are no peeking thumbnails. */
+@media (hover: none) {
+  .media-peek {
+    display: none;
   }
 }

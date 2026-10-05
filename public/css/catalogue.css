@@ -1,4 +1,9 @@
-/* Catalogue: every piece in grid, index and field views. Tokens, header, garments, footer and bag come from shared.css. */
+/*
+ * The catalogue: every piece in grid, index and field views, with filters
+ * and a pinned toolbar. Tokens, header, garments, footer and bag come from
+ * shared.css. Responsive rules are gathered at the end.
+ */
+
 .catalogue-intro {
   display: flex;
   justify-content: space-between;
@@ -14,7 +19,8 @@
   max-width: 240px;
 }
 
-/* Filters scroll away; the slim toolbar (sort, search, count, view) stays pinned. */
+/* Filters scroll away; the slim toolbar (sort, search, count, view) stays
+   pinned. */
 .filters {
   display: grid;
   gap: 10px;
@@ -98,6 +104,7 @@
   outline: none;
   border-bottom-color: var(--ink);
 }
+/* The "/" shortcut hint, hidden once the field is in use. */
 .search kbd {
   position: absolute;
   right: 0;
@@ -147,10 +154,6 @@
   gap: 64px clamp(24px, 3.4vw, 56px);
   padding: 48px 0 96px;
 }
-.catalogue-grid .product-card {
-  display: block;
-  -webkit-user-drag: none;
-}
 .catalogue-grid .garment-space {
   height: clamp(250px, 24vw, 340px);
 }
@@ -158,6 +161,8 @@
   text-decoration: underline;
   text-underline-offset: 4px;
 }
+/* New items fade in; a piece returned to from its product page is
+   outlined briefly. */
 .arriving {
   animation: catalogue-arrive 0.38s cubic-bezier(0.25, 0.7, 0.2, 1) both;
 }
@@ -182,7 +187,7 @@
   }
 }
 
-/* Index: dense rows with a sweep line passing down them */
+/* Index: compact rows with a sweep line passing down them. */
 .catalogue-index {
   position: relative;
   padding: 36px 0 96px;
@@ -191,8 +196,8 @@
 .index-row {
   display: grid;
   grid-template-columns:
-    44px minmax(0, 2fr) minmax(0, 1.2fr) minmax(0, 1fr)
-    minmax(0, 1.3fr) 110px 130px;
+    44px minmax(0, 2fr) minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.3fr)
+    110px 130px;
   gap: 18px;
   align-items: baseline;
 }
@@ -220,8 +225,6 @@
   font: 11px var(--mono);
   letter-spacing: 0.03em;
   color: var(--muted);
-}
-.index-row > span {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -244,6 +247,7 @@
   color: var(--muted);
   margin-right: 8px;
 }
+/* --top and --h (the list's position and height) come from catalogue.js. */
 .index-sweep {
   position: absolute;
   left: 0;
@@ -276,13 +280,102 @@
   }
 }
 
-/* Field: one radar, a ring per collection, a blip per piece */
+/* Batched lists: a "Show more" row that also loads automatically as it
+   nears the viewport. */
+.load-more-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  border-top: 1px solid var(--rule);
+  margin-top: -40px;
+  padding: 20px 0 90px;
+  font: 11px var(--mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.load-more {
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--ink);
+  padding: 10px 16px;
+  border: 1px solid var(--ink);
+}
+.load-more:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+.empty-state {
+  min-height: 44svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 40px 0 90px;
+}
+.empty-state p {
+  font-size: clamp(28px, 3.4vw, 48px);
+  letter-spacing: -0.04em;
+  margin: 0;
+}
+
+/* Field: one radar, a ring per collection, a blip per piece. */
 .field-view {
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(260px, 1fr);
   gap: clamp(30px, 5vw, 90px);
   padding: 40px 0 96px;
   align-items: start;
+}
+/* Above the radar: the level of detail, and "← All rings" when zoomed. */
+.field-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  width: min(100%, calc(100svh - 170px));
+  min-width: 280px;
+  margin: 0 auto 12px;
+  font: 10px var(--mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.field-head b {
+  font-weight: 400;
+  color: var(--ink);
+}
+.zoom-out {
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.zoom-out:hover {
+  opacity: 0.6;
+}
+/* Touch screens: the piece selected by a first tap, named above the radar. */
+.field-pick {
+  width: 100%;
+  margin: -4px 0 12px;
+  font: 10px var(--mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.field-pick b {
+  font-weight: 400;
+  color: var(--ink);
+}
+.field-pick a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  margin-left: 6px;
 }
 .field-stage {
   position: relative;
@@ -310,6 +403,33 @@
   padding: 0 3px;
   pointer-events: none;
 }
+/* In summary the ring labels become buttons that zoom into their ring. */
+.field-stage.summary {
+  cursor: zoom-in;
+}
+.field-stage.summary .ring-label {
+  pointer-events: auto;
+  cursor: zoom-in;
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  padding: 3px 7px;
+  font-size: 10px;
+  z-index: 3;
+}
+.field-stage.summary .ring-label:hover:not(:disabled),
+.field-stage.summary .ring-label:focus-visible {
+  border-color: var(--ink);
+}
+.field-stage.summary .ring-label:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+.blip-layer {
+  position: absolute;
+  inset: 0;
+}
+/* A blip: a dot (::before) with a ring (::after) that pings outwards when
+   the sweep passes. Washed-black pieces are hollow. */
 .blip {
   position: absolute;
   width: 24px;
@@ -374,9 +494,13 @@
   outline: 1px dashed var(--muted);
   outline-offset: 2px;
 }
-.blip.dim {
-  opacity: 0.16;
-  pointer-events: none;
+.field-stage.dense .blip {
+  width: 16px;
+  height: 16px;
+}
+.field-stage.dense .blip:before {
+  width: 5px;
+  height: 5px;
 }
 .field-legend {
   display: flex;
@@ -402,7 +526,7 @@
   box-shadow: inset 0 0 0 1.5px var(--ink);
 }
 
-/* Contact panel: tracks what the sweep finds, or what you point at */
+/* Contact panel: tracks what the sweep finds, or what you point at. */
 .contact {
   position: sticky;
   top: 84px;
@@ -459,17 +583,6 @@
   padding: 9px 0;
   border-bottom: 1px solid var(--rule);
 }
-.contact-readout dt {
-  font: 10px var(--mono);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--muted);
-  padding-top: 2px;
-}
-.contact-readout dd {
-  margin: 0;
-  font-size: 13px;
-}
 .contact-open {
   display: flex;
   justify-content: space-between;
@@ -491,23 +604,38 @@
   color: var(--muted);
   margin: 0 0 18px;
 }
-
-.empty-state {
-  min-height: 44svh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 40px 0 90px;
-}
-.empty-state p {
-  font-size: clamp(28px, 3.4vw, 48px);
-  letter-spacing: -0.04em;
+/* The overview shown in summary: one zoom button per ring. */
+.contact-note {
+  color: var(--muted);
   margin: 0;
 }
+.ring-list {
+  list-style: none;
+  margin: 22px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--rule);
+}
+.ring-list button {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--rule);
+  font: 11px var(--mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.ring-list button:hover:not(:disabled),
+.ring-list button:focus-visible {
+  padding-left: 6px;
+}
+.ring-list button:disabled {
+  color: var(--muted);
+  cursor: default;
+}
 
-/* Medium widths drop the Colour column (the filter still covers it). */
+/* Medium widths drop the index's Colour column (the filter still covers
+   it). */
 @media (max-width: 1100px) {
   .index-head,
   .index-row {
@@ -520,10 +648,12 @@
     display: none;
   }
 }
+/* Narrower: the contact panel moves below the radar. */
 @media (max-width: 900px) {
   .field-view {
     grid-template-columns: minmax(0, 1fr);
   }
+  .field-head,
   .field-stage {
     width: 100%;
   }
@@ -540,7 +670,7 @@
   .catalogue-intro p {
     margin-top: 20px;
   }
-  /* On phones the panel opens directly under the pinned toolbar. */
+  /* On phones the filter panel opens directly under the pinned toolbar. */
   .catalogue {
     display: flex;
     flex-direction: column;
@@ -640,145 +770,9 @@
     animation: none;
   }
 }
+/* Arrow-key hints are useless without a keyboard. */
 @media (hover: none) {
   .step-hint {
     display: none;
   }
-}
-/* Batched lists: a "Show more" row that also loads automatically as it nears the viewport. */
-.load-more-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  border-top: 1px solid var(--rule);
-  margin-top: -40px;
-  padding: 20px 0 90px;
-  font: 11px var(--mono);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.load-more {
-  font: inherit;
-  letter-spacing: inherit;
-  text-transform: inherit;
-  color: var(--ink);
-  padding: 10px 16px;
-  border: 1px solid var(--ink);
-}
-.load-more:hover {
-  background: var(--ink);
-  color: var(--paper);
-}
-/* Field levels of detail: head line, ring zoom buttons in summary, overview list, denser blips when zoomed. */
-.field-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 16px;
-  width: min(100%, calc(100svh - 170px));
-  min-width: 280px;
-  margin: 0 auto 12px;
-  font: 10px var(--mono);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.field-head b {
-  font-weight: 400;
-  color: var(--ink);
-}
-.zoom-out {
-  font: inherit;
-  letter-spacing: inherit;
-  text-transform: inherit;
-  color: var(--ink);
-  white-space: nowrap;
-}
-.zoom-out:hover {
-  opacity: 0.6;
-}
-.blip-layer {
-  position: absolute;
-  inset: 0;
-}
-.field-stage.summary {
-  cursor: zoom-in;
-}
-.field-stage.summary .ring-label {
-  pointer-events: auto;
-  cursor: zoom-in;
-  color: var(--ink);
-  border: 1px solid var(--rule);
-  padding: 3px 7px;
-  font-size: 10px;
-  z-index: 3;
-}
-.field-stage.summary .ring-label:hover:not(:disabled),
-.field-stage.summary .ring-label:focus-visible {
-  border-color: var(--ink);
-}
-.field-stage.summary .ring-label:disabled {
-  color: var(--muted);
-  cursor: default;
-}
-.field-stage.dense .blip {
-  width: 16px;
-  height: 16px;
-}
-.field-stage.dense .blip:before {
-  width: 5px;
-  height: 5px;
-}
-.contact-note {
-  color: var(--muted);
-  margin: 0;
-}
-.ring-list {
-  list-style: none;
-  margin: 22px 0 0;
-  padding: 0;
-  border-top: 1px solid var(--rule);
-}
-.ring-list button {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  padding: 13px 0;
-  border-bottom: 1px solid var(--rule);
-  font: 11px var(--mono);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-.ring-list button:hover:not(:disabled),
-.ring-list button:focus-visible {
-  padding-left: 6px;
-}
-.ring-list button:disabled {
-  color: var(--muted);
-  cursor: default;
-}
-@media (max-width: 900px) {
-  .field-head {
-    width: 100%;
-  }
-}
-.field-pick {
-  width: 100%;
-  margin: -4px 0 12px;
-  font: 10px var(--mono);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.field-pick b {
-  font-weight: 400;
-  color: var(--ink);
-}
-.field-pick a {
-  color: var(--ink);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  margin-left: 6px;
 }

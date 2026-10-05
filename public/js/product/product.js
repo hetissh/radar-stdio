@@ -120,7 +120,8 @@
     return readout
       .map(
         ([term, value]) =>
-          `<div><dt>${esc(term)}</dt><dd>${esc(value)}</dd></div>`,
+          `<div><dt class="readout-label">${esc(term)}</dt>` +
+          `<dd class="readout-value">${esc(value)}</dd></div>`,
       )
       .join('');
   }

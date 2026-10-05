@@ -185,8 +185,6 @@
   transition: opacity 0.18s;
   user-select: none;
   transform-origin: center center;
-  display: block;
-  -webkit-user-drag: none;
 }
 .product-card:hover,
 .product-card:focus-visible {
@@ -317,22 +315,10 @@
 [data-theme='light'] .orbit-choice[aria-current='true'] {
   box-shadow: 0 0 18px #0000000d;
 }
-/* Rings are SVG: even round dots at any scale, and a solid line for the
-   current collection. */
-.orbit-ring {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  pointer-events: none;
-}
+/* Rings are SVG (.ring-svg): even round dots at any scale, and a solid line
+   for the current collection. */
 .orbit-ring circle {
-  fill: none;
   stroke: #6a6a6a;
-  stroke-width: 1.3;
-  stroke-linecap: round;
-  stroke-dasharray: 0 1;
   transition: stroke 0.2s;
 }
 .orbit-choice:hover .orbit-ring circle {

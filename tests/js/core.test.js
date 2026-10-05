@@ -154,4 +154,5 @@ test('radar maths: lag, glyphs, fade and dotted rings', () => {
   assert.equal(page.run('radar.fade(5)'), 1);
   assert.match(page.run('radar.ringSvg(40)'), /pathLength="41"/);
   assert.match(page.run('radar.ringSvg(200, 140)'), /pathLength="140"/);
+  assert.match(page.run('radar.ringSvg(40)'), /^<svg class="ring-svg" /);
 });

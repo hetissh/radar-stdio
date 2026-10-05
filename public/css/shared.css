@@ -96,6 +96,36 @@ img {
   line-height: 0.9;
   margin: 18px 0 0;
 }
+/* Label and value rows in a piece's readout (product page, catalogue contact
+   panel). */
+.readout-label {
+  font: 10px var(--mono);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-top: 2px;
+}
+.readout-value {
+  margin: 0;
+  font-size: 13px;
+}
+/* A dotted ring drawn as SVG (radar.ringSvg(), and the homepage locator):
+   round dots come from a zero-length dash with round caps. Components set
+   the stroke colour. */
+.ring-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.ring-svg circle {
+  fill: none;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-dasharray: 0 1;
+}
 /* A radar canvas filling its stage, behind everything in it. */
 .radar-canvas {
   position: absolute;
@@ -397,6 +427,11 @@ img {
 }
 .concept-tee.dark img {
   mix-blend-mode: normal;
+}
+/* Every product card is a block link whose image can't be dragged away. */
+.product-card {
+  display: block;
+  -webkit-user-drag: none;
 }
 /* The caption sits on a solid band so the radar never shows through text. */
 .piece-caption {

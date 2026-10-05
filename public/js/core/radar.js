@@ -108,7 +108,8 @@ const radar = (() => {
     const radius = diameter / 2 - 0.5;
     const count = dots || Math.round((TAU * radius) / 3);
     return (
-      `<svg viewBox="0 0 ${diameter} ${diameter}" aria-hidden="true">` +
+      `<svg class="ring-svg" viewBox="0 0 ${diameter} ${diameter}" ` +
+      'aria-hidden="true">' +
       `<circle cx="${diameter / 2}" cy="${diameter / 2}" r="${radius}" ` +
       `pathLength="${count}"/></svg>`
     );

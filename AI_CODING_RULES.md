@@ -22,7 +22,7 @@ These rules apply three guides, plus decisions made for this project:
 
 Rules marked **(lint)** are enforced by `npm run lint`. The rest need
 judgement and are checked in review. Where this project deliberately departs
-from a guide, the reason is given in [§9](#9-deliberate-deviations).
+from a guide, the reason is given in [§10](#10-deliberate-deviations).
 
 ## 1. Project structure
 
@@ -153,7 +153,7 @@ when it serves a real purpose).
 
 - **One concern per file.** Split a file when it mixes separate features or
   passes about **400 lines of code** (comments and blank lines not counted).
-- **Classic scripts, not ES modules** (see §9). Each file:
+- **Classic scripts, not ES modules** (see §10). Each file:
   - wraps its internals in an IIFE, so only its declared names become globals
     (`no-implicit-globals` **(lint)**);
   - lists what it defines in `/* exported a, b */` and what it uses from
@@ -192,7 +192,49 @@ when it serves a real purpose).
 - **Reduced motion:** every animation checks `prefers-reduced-motion`.
 - Prefer `?.` and `??` to `a && a.b` chains.
 
-## 7. Documentation
+## 7. CSS
+
+- **One stylesheet per page** (`home.css`, `catalogue.css`, `product.css`)
+  plus `shared.css` for what every page uses. No inline `<style>` blocks and
+  no `style` attributes in HTML; values that JavaScript computes reach CSS
+  through custom properties (`--rise`, `--scale`, `--focus-light`, `--lift`,
+  `--top`, `--h`), named in a comment where they are used.
+- **File layout:** a header comment saying what the file styles; rules
+  grouped by component, each group under a short comment saying what it is
+  (CSS has no functions to give structure, so these group comments are
+  wanted, but never as decorative banners); `[data-theme='light']` rules
+  right after the rules they adjust; responsive rules gathered at the end of
+  the file, then `prefers-reduced-motion`, then `hover: none`.
+- **Define each selector once** per file and media query. Don't patch a rule
+  by appending a second copy later: edit the rule.
+- **No dead rules.** Before adding a rule, make sure something renders the
+  element; when markup or scripts stop producing a class, delete its rules.
+  To audit, check every selector against every page state (as in the CSS
+  pass recorded in the changelog).
+- **Shared patterns become shared classes** in `shared.css` (`.page-title`,
+  `.radar-canvas`, `.ring-svg`, `.readout-label`, `.readout-value`,
+  `.product-card` basics) instead of identical declarations in several
+  files. Don't force different components into one class just because a few
+  declarations look alike; a shared class must mean the same thing
+  everywhere it is used.
+- **Colours and fonts come from the tokens** in `:root` (`--paper`, `--ink`,
+  `--muted`, `--rule`, `--mono`, `--sans`, `--gutter`), so both themes stay
+  consistent.
+- **Mind the cascade when moving rules:** a rule's position matters when
+  another rule of equal specificity sets the same property on the same
+  element (for example `.loupe.photo` must follow `.loupe.chalk`; the
+  reduced-motion block must follow the mobile block). Comment such
+  dependencies where they occur.
+- Selectors stay as simple as possible: classes, not IDs, and no deeper
+  nesting than needed.
+- **Verify CSS changes by computed style:** for every element and its
+  `::before`/`::after`, compare `getComputedStyle()` before and after,
+  across every page state, at widths either side of each breakpoint (1280,
+  950, 820, 720, 390) and in both themes, with animations frozen. A
+  difference that also appears between two runs of the same version is
+  timing, not CSS; re-run with a longer wait.
+
+## 8. Documentation
 
 - `@fileoverview` at the top of every file; JSDoc with types on every
   function (§3).
@@ -204,13 +246,13 @@ when it serves a real purpose).
 - `README.md` covers setup, commands, environment, deployment and layout.
   Update it when any of those change.
 
-## 8. Cache-busting
+## 9. Cache-busting
 
 Every `<link>` and `<script>` tag carries `?v=YYYY-MM-DD<letter>`. When any
 CSS or JS file's content changes, bump the version on **all** pages
 together, so a returning visitor never mixes old and new files.
 
-## 9. Deliberate deviations
+## 10. Deliberate deviations
 
 | Guide | Rule | What we do instead, and why |
 |---|---|---|
@@ -220,7 +262,7 @@ together, so a returning visitor never mixes old and new files.
 | Folder guide | Source under `src/`, static files under `public/` | One `public/` folder. With no build step, the site's source is exactly what is served, so a separate `src/` would only be a copy. |
 | Folder guide | Lowercase kebab-case names | `legacy_assets/` keeps the name the project owner chose. |
 
-## 10. Verifying changes (required)
+## 11. Verifying changes (required)
 
 A refactor must not change behaviour. Before reporting a change done:
 
@@ -242,7 +284,7 @@ A refactor must not change behaviour. Before reporting a change done:
 Any temporary test server or launch configuration is removed again
 afterwards.
 
-## 11. Git
+## 12. Git
 
 - Work on `develop`. `main` is what Cloudflare deploys: never push to it
   unless asked.
@@ -252,7 +294,7 @@ afterwards.
   the generated `public/js/core/config.js` are ignored.
 - Never stage someone else's uncommitted work: stage files explicitly.
 
-## 12. Deployment
+## 13. Deployment
 
 Cloudflare Pages builds `main` with:
 
