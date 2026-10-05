@@ -13,16 +13,18 @@ change done, and state plainly anything that was not verified.
 
 ## Sources
 
-These rules apply three guides, plus decisions made for this project:
+These rules apply four guides, plus decisions made for this project:
 
 1. **Google JavaScript Style Guide** (google.github.io/styleguide/jsguide.html)
 2. **clean-code-javascript** (github.com/ryanmcdermott/clean-code-javascript)
 3. **Universal Project Folder Structure Guide** (the folder-structure article
    supplied by the project owner)
+4. **Google Python Style Guide** (google.github.io/styleguide/pyguide.html),
+   the Python counterpart of guide 1, for `scripts/`
 
 Rules marked **(lint)** are enforced by `npm run lint`. The rest need
 judgement and are checked in review. Where this project deliberately departs
-from a guide, the reason is given in [§10](#10-deliberate-deviations).
+from a guide, the reason is given in [§11](#11-deliberate-deviations).
 
 ## 1. Project structure
 
@@ -70,9 +72,9 @@ when it serves a real purpose).
 | Command | Must pass before every commit |
 |---|---|
 | `npm run check` | Runs all three below. |
-| `npm run format:check` | Prettier formatting (`npm run format` fixes it). |
-| `npm run lint` | ESLint: Google style and clean-code rules (`eslint.config.mjs`). |
-| `npm test` | The test suite (Node's built-in runner). |
+| `npm run format:check` | Prettier (JS, CSS, JSON) and `ruff format` (Python); `npm run format` fixes both. |
+| `npm run lint` | ESLint (`eslint.config.mjs`), `ruff check` and `mypy` (`pyproject.toml`). |
+| `npm test` | JavaScript tests (Node's runner) and Python tests (`unittest`). |
 
 - **Prettier** (`.prettierrc.json`): 80-column lines, 2-space indent, single
   quotes, semicolons, trailing commas, `quoteProps: consistent`. HTML pages
@@ -81,6 +83,8 @@ when it serves a real purpose).
   hand.
 - Pinned for Node 18: ESLint 9.39 and eslint-plugin-jsdoc 50.8 (the last
   releases that support it). Upgrade them together with Node.
+- Python tools: `python3 -m pip install ruff mypy` (versions in
+  `pyproject.toml`).
 
 ## 3. JavaScript: Google style
 
@@ -153,7 +157,7 @@ when it serves a real purpose).
 
 - **One concern per file.** Split a file when it mixes separate features or
   passes about **400 lines of code** (comments and blank lines not counted).
-- **Classic scripts, not ES modules** (see §10). Each file:
+- **Classic scripts, not ES modules** (see §11). Each file:
   - wraps its internals in an IIFE, so only its declared names become globals
     (`no-implicit-globals` **(lint)**);
   - lists what it defines in `/* exported a, b */` and what it uses from
@@ -234,7 +238,50 @@ when it serves a real purpose).
   difference that also appears between two runs of the same version is
   timing, not CSS; re-run with a longer wait.
 
-## 8. Documentation
+## 8. Python (scripts/)
+
+The scripts follow the **Google Python Style Guide** and the same clean-code
+rules as the JavaScript, enforced by `ruff` (lint and format) and `mypy`
+(types), configured in `pyproject.toml`.
+
+- **Standard library only**, targeting **Python 3.9+** (the Cloudflare build
+  image's version isn't pinned). Every file starts with
+  `from __future__ import annotations`; don't use syntax newer than 3.9 at
+  runtime (no `match`, no `X | Y` outside annotations, no nested same-type
+  quotes in f-strings).
+- **Every script has a module docstring** (what it does, how to run it, its
+  options) and a `main()` behind `if __name__ == '__main__':`. Nothing runs
+  at import time, so every module can be imported by tests.
+- **Options with `argparse`**, never by hand from `sys.argv`.
+- **Shared code lives in shared modules:** `paths.py` (every path under the
+  repository), `environment.py` (`.env` and environment settings),
+  `shopify_api.py` (the Admin client, HTTP, and Shopify helpers such as
+  `metafields()`, `price_to_int()`, `headless_publications()`). Never define
+  a path, a helper or a query twice.
+- **Docstrings in Google style** on every module, class and function, with
+  `Args:`, `Returns:` and `Raises:` sections **(lint)**; type annotations on
+  every function **(lint, mypy strict)**.
+- **Naming:** `snake_case` functions and variables, `UPPER_SNAKE_CASE`
+  constants, `CapWords` classes **(lint)**.
+- **At most three parameters** (ruff counts `self`, so `max-args = 4`)
+  **(lint)**; group related values in a `@dataclass` or `NamedTuple`
+  (`ImportContext`, `CheckScope`, `WriteBack`). No boolean flag parameters:
+  pass a value instead (`stock_location: str | None`) or split the function.
+- **No `assert` for checks** (Python's `-O` strips them) **(lint)**. Raise a
+  specific exception (`CatalogueError`, `ExportError`, `ShopifyError`) and
+  turn it into `SystemExit('script: message')` in `main()`, so the build
+  fails with a clear message.
+- **Complexity at most 12** per function **(lint)**; split long functions
+  into named steps, or into a small class when steps share state
+  (`CatalogueReader`, `StoreCheck`).
+- `print` only for messages to the person running the script; never print
+  key values.
+- GraphQL documents are module-level constants, wrapped within 80 columns.
+- Tests live in `tests/py/` (`unittest`, run by `npm test`). Anything that
+  would call Shopify is tested against fakes; **tests never touch the real
+  store**.
+
+## 9. Documentation
 
 - `@fileoverview` at the top of every file; JSDoc with types on every
   function (§3).
@@ -246,13 +293,13 @@ when it serves a real purpose).
 - `README.md` covers setup, commands, environment, deployment and layout.
   Update it when any of those change.
 
-## 9. Cache-busting
+## 10. Cache-busting
 
 Every `<link>` and `<script>` tag carries `?v=YYYY-MM-DD<letter>`. When any
 CSS or JS file's content changes, bump the version on **all** pages
 together, so a returning visitor never mixes old and new files.
 
-## 10. Deliberate deviations
+## 11. Deliberate deviations
 
 | Guide | Rule | What we do instead, and why |
 |---|---|---|
@@ -261,8 +308,9 @@ together, so a returning visitor never mixes old and new files.
 | clean-code | Two arguments or fewer, ideally | At most three **(lint)**: `clamp(value, min, max)` reads better than an options object. |
 | Folder guide | Source under `src/`, static files under `public/` | One `public/` folder. With no build step, the site's source is exactly what is served, so a separate `src/` would only be a copy. |
 | Folder guide | Lowercase kebab-case names | `legacy_assets/` keeps the name the project owner chose. |
+| Google Python | Lint with pylint, type-check with pytype | ruff and mypy (strict), which cover the same rules and are faster. |
 
-## 11. Verifying changes (required)
+## 12. Verifying changes (required)
 
 A refactor must not change behaviour. Before reporting a change done:
 
@@ -284,7 +332,7 @@ A refactor must not change behaviour. Before reporting a change done:
 Any temporary test server or launch configuration is removed again
 afterwards.
 
-## 12. Git
+## 13. Git
 
 - Work on `develop`. `main` is what Cloudflare deploys: never push to it
   unless asked.
@@ -294,7 +342,7 @@ afterwards.
   the generated `public/js/core/config.js` are ignored.
 - Never stage someone else's uncommitted work: stage files explicitly.
 
-## 13. Deployment
+## 14. Deployment
 
 Cloudflare Pages builds `main` with:
 

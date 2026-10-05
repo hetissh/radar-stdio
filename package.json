@@ -1,13 +1,13 @@
 {
   "name": "radar-stdio",
   "private": true,
-  "description": "RADAR STUDIO storefront: static site in public/, developer scripts in scripts/.",
+  "description": "RADAR STUDIO storefront: static site in public/, developer scripts in scripts/. Python tooling is in pyproject.toml.",
   "scripts": {
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "test": "node --test tests/",
+    "format": "prettier --write . && ruff format scripts tests/py",
+    "format:check": "prettier --check . && ruff format --check scripts tests/py",
+    "lint": "eslint . && ruff check scripts tests/py && mypy",
+    "lint:fix": "eslint . --fix && ruff check scripts tests/py --fix",
+    "test": "node --test tests/ && PYTHONPATH=scripts python3 -m unittest discover -s tests/py -p \"test_*.py\"",
     "check": "npm run format:check && npm run lint && npm test"
   },
   "devDependencies": {

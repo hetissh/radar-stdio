@@ -1,0 +1,68 @@
+# The Python side of the project: the scripts in scripts/ and their tests.
+# They use the standard library only; ruff and mypy are development tools.
+
+[project]
+name = "radar-stdio-scripts"
+version = "1.0.0"
+description = "Build, export and Shopify scripts for the RADAR STUDIO site."
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["ruff>=0.1.13", "mypy>=1.8"]
+
+# Google Python Style Guide plus clean-code rules. Formatting is ruff format.
+[tool.ruff]
+line-length = 80
+target-version = "py39"
+src = ["scripts", "tests/py"]
+
+[tool.ruff.lint]
+select = [
+  "E", "W",   # pycodestyle
+  "F",        # pyflakes: unused names, undefined names
+  "I",        # import order
+  "N",        # naming
+  "D",        # docstrings
+  "UP",       # modern syntax for the target version
+  "B",        # likely bugs
+  "SIM",      # simpler forms
+  "ANN",      # type annotations on every function
+  "RET",      # consistent returns
+  "C90",      # complexity
+  "PLR0913",  # at most three parameters (see max-args)
+  "S101",     # no assert outside tests
+  "T20",      # print only where a script reports to the user (per file below)
+]
+ignore = [
+  "D203",     # Google style: no blank line before the class docstring
+  "D213",     # Google style: summary on the first line
+  "ANN101",   # self needs no annotation
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pylint]
+# ruff counts self, so 4 means at most three real parameters (as in the
+# JavaScript rules).
+max-args = 4
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+[tool.ruff.lint.per-file-ignores]
+# Scripts report to the person running them.
+"scripts/*.py" = ["T20"]
+# Tests assert, and their test methods document themselves by name.
+"tests/py/*.py" = ["S101", "D102", "ANN"]
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.mypy]
+python_version = "3.9"
+files = ["scripts"]
+mypy_path = "scripts"
+strict = true
+warn_unreachable = true

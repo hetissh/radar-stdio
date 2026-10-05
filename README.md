@@ -29,12 +29,14 @@ radar-stdio/
 │   ├── assets/           images and media; assets/thumbs/ is generated
 │   └── _routes.json      Cloudflare: only /api/* runs Functions
 ├── functions/api/        Cloudflare Pages Functions (the Shopify webhook)
-├── scripts/              developer and build scripts (Python 3, standard library only)
-├── tests/                automated tests (Node's built-in test runner)
+├── scripts/              developer and build scripts (Python 3.9+, standard library only);
+│                         shared: paths.py, environment.py, shopify_api.py
+├── tests/                automated tests: JavaScript (Node's runner) and tests/py/ (unittest)
 ├── docs/                 notes, the Shopify plan, image provenance
 ├── legacy_assets/        unused files kept for reference; nothing links to them
 ├── AI_CODING_RULES.md    coding rules for people and AI assistants
-└── package.json          developer tooling (Prettier, ESLint)
+├── package.json          JavaScript tooling (Prettier, ESLint) and the npm commands
+└── pyproject.toml        Python tooling (ruff, mypy) and its manifest
 ```
 
 How the JavaScript is organised (classic scripts, one global per file, load
@@ -42,9 +44,10 @@ order) is described in [AI_CODING_RULES.md](AI_CODING_RULES.md).
 
 ## Requirements
 
-- Python 3 (standard library only).
-- Node.js 18.18 or later, for the developer tooling only. The site itself
-  needs nothing installed.
+- Python 3.9 or later (the scripts use the standard library only).
+- For development checks: Node.js 18.18 or later (`npm install`), and ruff
+  and mypy (`python3 -m pip install ruff mypy`). The site itself needs
+  nothing installed.
 - macOS for `scripts/build_images.py` (uses the built-in `sips`) and
   `scripts/make_demo_video.swift`.
 
@@ -62,10 +65,10 @@ disk, using the bundled `public/data/inline.js`.
 
 | Command | What it does |
 |---|---|
-| `npm run check` | Everything below that verifies: formatting, lint, tests. Run before committing. |
-| `npm run format` | Format JavaScript, CSS and JSON with Prettier. |
-| `npm run lint` | Check JavaScript against the Google style and clean-code rules (ESLint). |
-| `npm test` | Run the automated tests. |
+| `npm run check` | Everything below that verifies: formatting, lint, types, tests. Run before committing. |
+| `npm run format` | Format JavaScript, CSS and JSON (Prettier) and Python (ruff). |
+| `npm run lint` | Check JavaScript (ESLint) and Python (ruff, mypy) against the style and clean-code rules. |
+| `npm test` | Run the JavaScript and Python tests. |
 | `python3 scripts/build_data.py` | Split `public/data/products.json` into the files each page loads, and validate it. |
 | `python3 scripts/build_images.py` | Make the AVIF/JPEG thumbnails in `public/assets/thumbs/`. |
 | `python3 scripts/build_config.py` | Write `public/js/core/config.js` (public Shopify settings) from the environment. |
