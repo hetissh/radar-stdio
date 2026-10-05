@@ -211,7 +211,7 @@
     );
     return (
       `<section class="piece-stage" aria-label="${esc(piece.name)}, garment view">` +
-      '<canvas class="lock-field" aria-hidden="true"></canvas>' +
+      '<canvas class="lock-field radar-canvas" aria-hidden="true"></canvas>' +
       '<div class="lock-readout mono" aria-hidden="true">' +
       '<span class="lock-state">Scanning 000%</span>' +
       `<span>BRG ${bearingLabel(piece)}° / R${ring}</span>` +

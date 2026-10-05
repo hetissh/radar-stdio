@@ -90,7 +90,7 @@ const homeCollections = (() => {
           '<p class="collection-description">' +
           `${escLines(collection.copy)}</p></div>` +
           '<div class="arc-stage">' +
-          '<canvas class="arc-field" aria-hidden="true"></canvas>' +
+          '<canvas class="arc-field radar-canvas" aria-hidden="true"></canvas>' +
           '<div class="clothing-rail" tabindex="0" role="region" ' +
           `aria-label="${title} clothing cards">${railCardsHtml(index)}</div>` +
           '</div><div class="collection-bottom">' +

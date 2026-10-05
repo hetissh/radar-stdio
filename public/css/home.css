@@ -1,0 +1,506 @@
+/*
+ * The homepage: the entrance with its full-screen radar, the collection
+ * sections with their rails of cards riding an orbit, and the corner locator.
+ * Mobile rules are gathered at the end, before the reduced-motion rules
+ * (which must come last to win on small screens).
+ */
+
+/* Entrance */
+.entrance {
+  height: 100svh;
+  height: 100dvh;
+  min-height: 0;
+  max-height: none;
+  background: #000;
+  color: #f6f6f6;
+  position: relative;
+  /* The radar is drawn in ASCII glyphs below all foreground content. */
+  isolation: isolate;
+  overflow: hidden;
+}
+[data-theme='light'] .entrance {
+  background: var(--paper);
+  color: var(--ink);
+}
+.radar-scan {
+  user-select: none;
+}
+.intro {
+  position: absolute;
+  left: var(--gutter);
+  top: 48%;
+  transform: translateY(-50%);
+  font-size: clamp(23px, 2.2vw, 34px);
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: -0.025em;
+  margin: 0;
+  max-width: 490px;
+}
+.entrance-bottom {
+  position: absolute;
+  bottom: 30px;
+  left: var(--gutter);
+  right: var(--gutter);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #999;
+}
+[data-theme='light'] .entrance-bottom {
+  color: var(--muted);
+}
+.scroll-cue {
+  color: #eee;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.scroll-cue span {
+  font-size: 17px;
+  font-family: var(--sans);
+}
+[data-theme='light'] .scroll-cue {
+  color: #222;
+}
+
+/* Collections introduction */
+.collections-intro {
+  padding: 110px var(--gutter) 70px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 40px;
+}
+.collections-intro p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #999;
+  margin: 0;
+  max-width: 240px;
+}
+.view-all {
+  display: inline-block;
+  margin-top: 16px;
+  font: 11px var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.view-all:hover {
+  opacity: 0.6;
+}
+
+/*
+ * One collection: a tall section whose inner frame sticks to the viewport
+ * while the page scrolls through it (scrolling scans the rail sideways).
+ */
+.collection {
+  height: 190svh;
+  position: relative;
+  border-top: 1px solid #2c2c2c;
+}
+.collection-inner {
+  height: 100svh;
+  height: 100dvh;
+  position: sticky;
+  top: 0;
+  padding: 35px var(--gutter) 25px;
+  overflow: hidden;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+}
+.collection-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+.collection-heading h2 {
+  font-size: clamp(30px, 4.2vw, 62px);
+  font-weight: 400;
+  letter-spacing: -0.05em;
+  margin: 10px 0 0;
+}
+.collection-description {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #999;
+  max-width: 220px;
+  margin: 22px 0 0;
+}
+[data-theme='light'] .collections-intro p,
+[data-theme='light'] .collection-description,
+[data-theme='light'] .collection-bottom {
+  color: var(--muted);
+}
+[data-theme='light'] .collection {
+  border-top-color: var(--rule);
+}
+[data-theme='light'] .collection-inner {
+  background: var(--paper);
+}
+
+/* The rail: cards are spaced coordinates along the orbit (positions and
+   scale come from home-collections.js through --rise, --scale and
+   --visibility). */
+.arc-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin-inline: calc(-1 * var(--gutter));
+  isolation: isolate;
+}
+.clothing-rail {
+  display: flex;
+  gap: clamp(88px, 10vw, 160px);
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-inline: calc(50% - var(--card-width) / 2);
+  scrollbar-width: none;
+  --card-width: clamp(240px, 25vw, 360px);
+  touch-action: pan-x pan-y;
+  cursor: grab;
+}
+.clothing-rail::-webkit-scrollbar {
+  display: none;
+}
+.clothing-rail:active {
+  cursor: grabbing;
+}
+.product-card {
+  flex: 0 0 var(--card-width);
+  width: var(--card-width);
+  text-align: left;
+  transform: translateY(var(--rise, 0px)) scale(var(--scale, 1));
+  opacity: var(--visibility, 1);
+  will-change: transform;
+  position: relative;
+  transition: opacity 0.18s;
+  user-select: none;
+  transform-origin: center center;
+  display: block;
+  -webkit-user-drag: none;
+}
+.product-card:hover,
+.product-card:focus-visible {
+  opacity: 1;
+}
+/* A rail's closing "View all" card, for collections larger than the 12
+   featured pieces. */
+.rail-more-mark {
+  width: 58%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1px dotted var(--muted);
+  font: clamp(30px, 3.4vw, 48px) var(--sans);
+  letter-spacing: -0.05em;
+  color: var(--ink);
+}
+.rail-more:hover .rail-more-mark,
+.rail-more:focus-visible .rail-more-mark {
+  border-style: solid;
+  border-color: var(--ink);
+}
+.rail-empty {
+  align-self: center;
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* Below the rail: the "NN / NN" counter and its progress line. */
+.collection-bottom {
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 45px;
+  padding-right: 185px;
+  color: #929292;
+}
+.field-counter {
+  font: 11px var(--mono);
+}
+.field-progress {
+  width: 110px;
+  height: 1px;
+  background: #252525;
+  display: inline-block;
+  margin-left: 15px;
+  vertical-align: middle;
+  position: relative;
+}
+.field-progress:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform-origin: left;
+  transform: scaleX(var(--progress, 0.01));
+  background: #ddd;
+}
+[data-theme='light'] .field-progress {
+  background: var(--rule);
+}
+[data-theme='light'] .field-progress:after {
+  background: #222;
+}
+
+/*
+ * The locator: a small radar pinned to the corner while a collection is in
+ * view. --lift keeps it inside the last collection while the footer scrolls
+ * in.
+ */
+.mini-radar {
+  position: fixed;
+  right: 24px;
+  bottom: calc(22px + var(--lift, 0px));
+  width: 154px;
+  height: 174px;
+  z-index: 5;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(15px);
+  transition:
+    opacity 0.3s,
+    transform 0.3s;
+}
+.mini-radar.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+/* Its backdrop: a solid disc centred on the rings, drawn as a layer so it is
+   never clipped by the box. */
+.mini-radar:before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 72px;
+  width: 156px;
+  height: 156px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: 0 0 12px 4px var(--paper);
+  pointer-events: none;
+  z-index: -1;
+}
+.radar-orbits {
+  position: relative;
+  height: 144px;
+}
+.orbit-choice {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: var(--diameter);
+  height: var(--diameter);
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  z-index: var(--layer);
+}
+.orbit-choice[aria-current='true'] {
+  box-shadow: 0 0 18px #ffffff0b;
+}
+[data-theme='light'] .orbit-choice[aria-current='true'] {
+  box-shadow: 0 0 18px #0000000d;
+}
+/* Rings are SVG: even round dots at any scale, and a solid line for the
+   current collection. */
+.orbit-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.orbit-ring circle {
+  fill: none;
+  stroke: #6a6a6a;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-dasharray: 0 1;
+  transition: stroke 0.2s;
+}
+.orbit-choice:hover .orbit-ring circle {
+  stroke: #eee;
+}
+.orbit-choice[aria-current='true'] .orbit-ring circle {
+  stroke: #eee;
+  stroke-width: 1;
+  stroke-dasharray: none;
+}
+[data-theme='light'] .orbit-ring circle {
+  stroke: #9a9994;
+}
+[data-theme='light'] .orbit-choice:hover .orbit-ring circle,
+[data-theme='light'] .orbit-choice[aria-current='true'] .orbit-ring circle {
+  stroke: var(--ink);
+}
+.orbit-choice .orbit-number {
+  position: absolute;
+  top: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  font: 8px var(--mono);
+  background: #000;
+  padding: 0 3px;
+  color: #999;
+  pointer-events: none;
+}
+[data-theme='light'] .orbit-choice .orbit-number {
+  background: var(--paper);
+  color: var(--muted);
+}
+.mini-radar .center-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: #777;
+  pointer-events: none;
+  z-index: 6;
+  font: 10px var(--mono);
+}
+[data-theme='light'] .mini-radar .center-dot {
+  color: #8a8a8a;
+}
+.mini-radar-label {
+  text-align: center;
+  font: 9px var(--mono);
+  color: #aaa;
+  line-height: 1.5;
+}
+.mini-radar-label strong {
+  display: block;
+  font-weight: 400;
+  color: #eee;
+}
+[data-theme='light'] .mini-radar-label {
+  color: #555;
+}
+[data-theme='light'] .mini-radar-label strong {
+  color: var(--ink);
+}
+
+/* Small screens */
+@media (max-width: 700px) {
+  .intro {
+    font-size: 25px;
+    max-width: 300px;
+    top: 46%;
+  }
+  .entrance-bottom {
+    bottom: 25px;
+  }
+  .collections-intro {
+    padding-top: 65px;
+    padding-bottom: 45px;
+    display: block;
+  }
+  .collections-intro p {
+    margin-top: 25px;
+  }
+  .collection {
+    height: 155svh;
+  }
+  .collection-inner {
+    padding-top: 24px;
+  }
+  .collection-heading h2 {
+    font-size: 34px;
+  }
+  .collection-description {
+    font-size: 11px;
+    max-width: 120px;
+    margin-top: 22px;
+  }
+  .clothing-rail {
+    --card-width: 240px;
+    gap: 80px;
+  }
+  .garment-space {
+    height: 300px;
+  }
+  .piece-caption {
+    font-size: 12px;
+  }
+  .product-card {
+    transition: none;
+  }
+  .collection-bottom {
+    padding-right: 95px;
+    display: block;
+    font-size: 9px;
+  }
+  .collection-bottom .mono {
+    font-size: 9px;
+  }
+  .field-counter {
+    margin-bottom: 12px;
+    font-size: 10px;
+  }
+  .collection-bottom .field-counter,
+  .collection-bottom > .mono {
+    display: block;
+  }
+  .field-progress {
+    width: 65px;
+  }
+  .mini-radar {
+    width: 95px;
+    height: 116px;
+    right: 12px;
+    bottom: calc(16px + var(--lift, 0px));
+  }
+  .mini-radar:before {
+    top: 45.5px;
+    width: 100px;
+    height: 100px;
+    box-shadow: 0 0 8px 3px var(--paper);
+  }
+  .radar-orbits {
+    height: 91px;
+    transform: scale(0.64);
+    transform-origin: center center;
+  }
+  .orbit-ring circle {
+    stroke-width: 1.9;
+  }
+  .orbit-choice[aria-current='true'] .orbit-ring circle {
+    stroke-width: 1.5;
+  }
+  .mini-radar-label {
+    font-size: 7px;
+  }
+}
+
+/* Reduced motion: no smooth scrolling or transitions, and collections no
+   taller than the screen (there is no scan to scroll through). */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  * {
+    transition: none !important;
+  }
+  .collection {
+    height: 100svh;
+  }
+  .product-card {
+    will-change: auto;
+  }
+}

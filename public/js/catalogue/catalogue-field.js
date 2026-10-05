@@ -93,7 +93,7 @@ const catalogueField = (() => {
       '<button class="zoom-out" hidden>← All rings</button></div>' +
       '<p class="field-pick" hidden></p>' +
       '<div class="field-stage">' +
-      '<canvas class="field-canvas" aria-hidden="true"></canvas>' +
+      '<canvas class="field-canvas radar-canvas" aria-hidden="true"></canvas>' +
       `${ringLabels}<div class="blip-layer"></div>` +
       '<span class="field-centre" aria-hidden="true">+</span></div>' +
       `<p class="field-legend">${legend}` +

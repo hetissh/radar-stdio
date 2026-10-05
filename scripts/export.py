@@ -7,9 +7,10 @@ import re
 root = Path(__file__).resolve().parent.parent / 'public'  # the published site
 html = (root / 'index.html').read_text()
 # Asset links carry a ?v= cache-busting version; match with or without it.
-for sheet in ('css/shared.css', 'css/collections.css'):
-    html, found = re.subn(r'<link rel="stylesheet" href="' + re.escape(sheet) + r'(\?v=[^"]*)?">', lambda m, s=sheet: '<style>' + (root / s).read_text() + '</style>', html)
-    assert found == 1, sheet
+# Inline every stylesheet the homepage links, keeping their order.
+html, sheets = re.subn(r'<link rel="stylesheet" href="(css/[a-z-]+\.css)(\?v=[^"]*)?">',
+                       lambda m: '<style>' + (root / m.group(1)).read_text() + '</style>', html)
+assert sheets, 'no stylesheets found in index.html'
 # Product pages are separate files; the portable homepage links to them relative to this folder.
 logo = 'radar-logo-updated.png'
 logo_url = 'data:image/png;base64,' + base64.b64encode((root / 'assets' / logo).read_bytes()).decode()
