@@ -1,64 +1,70 @@
-// Homepage collection locator: the small radar pinned to the corner while a collection is on screen. Its rings
-// (one per collection, R01 innermost) show which collection you are in; choosing one scrolls to it, and hovering
-// or focusing one previews its name.
-//
-// Classic script (see shared.js): defines the global `homeLocator`. Uses shared.js.
-const homeLocator = (() => {
-  const nameOf = i =>
-    `${pad(i + 1)} / ${collectionData[i].title.toUpperCase()}`;
+/**
+ * @fileoverview The homepage collection locator: a small radar pinned to the
+ * corner while a collection is on screen. Its rings (one per collection, R01
+ * innermost) show which collection is in view; choosing one scrolls to it,
+ * and hovering or focusing one previews its name.
+ */
 
-  // Wire up the locator.
-  //   nav       the .mini-radar element (its ring buttons carry data-collection)
-  //   footer    the page footer; the locator lifts so it never covers it
-  //   sections  the collection <section> elements, by collection index
-  //   motion    the prefers-reduced-motion media query (instant scrolling)
-  // Returns update(active): call with the collection index in view, or -1 for none, whenever the page scrolls.
+/* exported homeLocator */
+/* global pad, collectionData */
+
+const homeLocator = (() => {
   /**
-   *
-   * @param root0
-   * @param root0.nav
-   * @param root0.footer
-   * @param root0.sections
-   * @param root0.motion
+   * @param {number} index Collection index.
+   * @return {string} For example '02 / BEST SELLERS'.
+   */
+  function nameOf(index) {
+    return `${pad(index + 1)} / ${collectionData[index].title.toUpperCase()}`;
+  }
+
+  /**
+   * Wires up the locator.
+   * @param {{
+   *   nav: !HTMLElement,
+   *   footer: !Element,
+   *   sections: !Array<!Element>,
+   *   motion: !MediaQueryList,
+   * }} options nav is the .mini-radar (its ring buttons carry
+   *     data-collection); the locator lifts so it never covers the footer;
+   *     sections by collection index; motion is the prefers-reduced-motion
+   *     query (instant scrolling).
+   * @return {{update: function(number)}} Call update() on every scroll with
+   *     the collection in view, or -1 for none.
    */
   function mount({ nav, footer, sections, motion }) {
     const title = nav.querySelector('strong');
     const buttons = [...document.querySelectorAll('[data-collection]')];
     let active = -1;
 
-    /**
-     *
-     * @param current
-     */
+    /** @param {number} current */
     function update(current) {
       active = current;
       nav.classList.toggle('visible', current >= 0);
-      nav.style.setProperty(
-        '--lift',
-        `${Math.max(0, innerHeight - footer.getBoundingClientRect().top)}px`,
+      const lift = Math.max(
+        0,
+        innerHeight - footer.getBoundingClientRect().top,
       );
+      nav.style.setProperty('--lift', `${lift}px`);
       nav.inert = current < 0;
       if (current < 0) return;
       title.textContent = nameOf(current);
-      buttons.forEach(button => {
-        button.setAttribute(
-          'aria-current',
-          String(Number(button.dataset.collection) === current),
-        );
-      });
+      for (const button of buttons) {
+        const isCurrent = Number(button.dataset.collection) === current;
+        button.setAttribute('aria-current', String(isCurrent));
+      }
     }
 
-    buttons.forEach(button => {
-      const i = Number(button.dataset.collection);
+    for (const button of buttons) {
+      const index = Number(button.dataset.collection);
       button.addEventListener('click', () => {
-        sections[i].scrollIntoView({
+        sections[index].scrollIntoView({
           behavior: motion.matches ? 'instant' : 'smooth',
           block: 'start',
         });
-        history.replaceState(null, '', `#${collectionData[i].id}`);
+        history.replaceState(null, '', `#${collectionData[index].id}`);
       });
       const preview = () => {
-        title.textContent = nameOf(i);
+        title.textContent = nameOf(index);
       };
       const restore = () => {
         if (active >= 0) title.textContent = nameOf(active);
@@ -67,7 +73,7 @@ const homeLocator = (() => {
       button.addEventListener('pointerleave', restore);
       button.addEventListener('focus', preview);
       button.addEventListener('blur', restore);
-    });
+    }
 
     return { update };
   }
